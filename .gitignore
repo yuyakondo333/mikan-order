@@ -41,6 +41,10 @@ supabase/.temp
 # vercel
 .vercel
 
+# local dev tools
+.mcp.json
+docker-compose.yml
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
