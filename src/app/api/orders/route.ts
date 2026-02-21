@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, users, addresses } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { orders, orderItems, addresses } from "@/db/schema";
 import { createOrderSchema } from "@/lib/validations";
+import { getAllOrders, getOrdersByLineUserId } from "@/db/queries/orders";
+import { upsertUser } from "@/db/queries/users";
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId");
 
     if (userId) {
-      const user = await db.query.users.findFirst({
-        where: eq(users.lineUserId, userId),
-      });
-      if (!user) return NextResponse.json([]);
-
-      const userOrders = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.userId, user.id));
+      const userOrders = await getOrdersByLineUserId(userId);
       return NextResponse.json(userOrders);
     }
 
-    const allOrders = await db.select().from(orders);
+    const allOrders = await getAllOrders();
     return NextResponse.json(allOrders);
   } catch (e) {
     console.error("Failed to fetch orders:", e);
@@ -52,17 +45,7 @@ export async function POST(request: NextRequest) {
   } = parsed.data;
 
   try {
-    // ユーザー upsert
-    let user = await db.query.users.findFirst({
-      where: eq(users.lineUserId, lineUserId),
-    });
-    if (!user) {
-      const [newUser] = await db
-        .insert(users)
-        .values({ lineUserId, displayName, pictureUrl })
-        .returning();
-      user = newUser;
-    }
+    const user = await upsertUser({ lineUserId, displayName, pictureUrl });
 
     // 配送先保存
     const [newAddress] = await db
@@ -102,20 +85,6 @@ export async function POST(request: NextRequest) {
     console.error("Failed to create order:", e);
     return NextResponse.json(
       { error: "注文の作成に失敗しました" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(request: NextRequest) {
-  try {
-    const { orderId, status } = await request.json();
-    await db.update(orders).set({ status }).where(eq(orders.id, orderId));
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error("Failed to update order:", e);
-    return NextResponse.json(
-      { error: "注文の更新に失敗しました" },
       { status: 500 }
     );
   }
