@@ -32,5 +32,15 @@ export const createOrderSchema = z.object({
   items: z.array(orderItemSchema).min(1, "カートが空です"),
 });
 
+export const productSchema = z.object({
+  name: z.string().min(1, "商品名を入力してください"),
+  variety: z.string().min(1, "品種を入力してください"),
+  weightGrams: z.number().int().positive("重量は1以上の整数を入力してください"),
+  priceJpy: z.number().int().positive("価格は1以上の整数を入力してください"),
+  description: z.string().optional().default(""),
+  isAvailable: z.boolean().default(true),
+});
+
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
+export type ProductFormData = z.infer<typeof productSchema>;

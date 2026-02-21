@@ -7,8 +7,8 @@ export type Product = {
   imageUrl: string | null;
   isAvailable: boolean;
   description: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 export type CartItemType = {
@@ -26,8 +26,8 @@ export type Order = {
   paymentMethod: string;
   totalJpy: number;
   note: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 export type Address = {
@@ -40,8 +40,8 @@ export type Address = {
   line2: string | null;
   phone: string;
   recipientName: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 export type User = {
@@ -49,6 +49,6 @@ export type User = {
   lineUserId: string;
   displayName: string;
   pictureUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
