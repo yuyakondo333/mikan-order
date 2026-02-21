@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "みかん注文 | Mikan Order",
+  title: {
+    default: "みかん農園",
+    template: "%s | みかん農園",
+  },
   description: "実家のみかん農園 注文受付アプリ",
 };
 
