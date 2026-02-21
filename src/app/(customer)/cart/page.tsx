@@ -40,7 +40,7 @@ export default function CartPage() {
       <h1 className="mb-6 text-2xl font-bold text-orange-600">カート</h1>
       {cart.length === 0 ? (
         <div className="text-center">
-          <p className="text-gray-500">カートは空です</p>
+          <p className="text-gray-700">カートは空です</p>
           <Link
             href="/products"
             className="mt-4 inline-block text-orange-500 underline"
@@ -60,7 +60,7 @@ export default function CartPage() {
               />
             ))}
             <div className="mt-4 flex items-center justify-between border-t pt-4">
-              <span className="text-lg font-bold">
+              <span className="text-lg font-bold text-gray-900">
                 合計: ¥{total.toLocaleString()}
               </span>
               <Link
