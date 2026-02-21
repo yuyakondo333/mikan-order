@@ -97,7 +97,7 @@ export default function AddressPage() {
         className="space-y-4 rounded-lg bg-white p-4 shadow-sm"
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             受取人名
           </label>
           <input
@@ -111,7 +111,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             郵便番号
           </label>
           <input
@@ -126,7 +126,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             都道府県
           </label>
           <input
@@ -140,7 +140,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             市区町村
           </label>
           <input
@@ -154,7 +154,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             番地・建物名
           </label>
           <input
@@ -168,7 +168,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             建物名・部屋番号（任意）
           </label>
           <input
@@ -179,7 +179,7 @@ export default function AddressPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             電話番号
           </label>
           <input
@@ -194,7 +194,7 @@ export default function AddressPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-900">
             お支払い方法
           </label>
           <div className="mt-2 space-y-2">
