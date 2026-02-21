@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
+import { addressSchema } from "@/lib/validations";
+
+type FieldErrors = Partial<Record<string, string>>;
 
 export default function AddressPage() {
   const router = useRouter();
@@ -20,15 +23,34 @@ export default function AddressPage() {
     "bank_transfer" | "cash_on_delivery"
   >("cash_on_delivery");
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: undefined });
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!profile) return;
+
+    const result = addressSchema.safeParse(form);
+    if (!result.success) {
+      const fieldErrors: FieldErrors = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = issue.message;
+        }
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
     setSubmitting(true);
+    setErrors({});
 
     try {
       const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
@@ -44,7 +66,7 @@ export default function AddressPage() {
           lineUserId: profile.userId,
           displayName: profile.displayName,
           pictureUrl: profile.pictureUrl,
-          address: form,
+          address: result.data,
           paymentMethod,
           items: cart,
         }),
@@ -59,6 +81,10 @@ export default function AddressPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function fieldClass(name: string) {
+    return `mt-1 w-full rounded border p-2 ${errors[name] ? "border-red-500" : ""}`;
   }
 
   return (
@@ -78,9 +104,11 @@ export default function AddressPage() {
             name="recipientName"
             value={form.recipientName}
             onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("recipientName")}
           />
+          {errors.recipientName && (
+            <p className="mt-1 text-sm text-red-600">{errors.recipientName}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -90,10 +118,12 @@ export default function AddressPage() {
             name="postalCode"
             value={form.postalCode}
             onChange={handleChange}
-            required
             placeholder="123-4567"
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("postalCode")}
           />
+          {errors.postalCode && (
+            <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -103,9 +133,11 @@ export default function AddressPage() {
             name="prefecture"
             value={form.prefecture}
             onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("prefecture")}
           />
+          {errors.prefecture && (
+            <p className="mt-1 text-sm text-red-600">{errors.prefecture}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -115,9 +147,11 @@ export default function AddressPage() {
             name="city"
             value={form.city}
             onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("city")}
           />
+          {errors.city && (
+            <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -127,9 +161,11 @@ export default function AddressPage() {
             name="line1"
             value={form.line1}
             onChange={handleChange}
-            required
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("line1")}
           />
+          {errors.line1 && (
+            <p className="mt-1 text-sm text-red-600">{errors.line1}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -139,7 +175,7 @@ export default function AddressPage() {
             name="line2"
             value={form.line2}
             onChange={handleChange}
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("line2")}
           />
         </div>
         <div>
@@ -150,10 +186,12 @@ export default function AddressPage() {
             name="phone"
             value={form.phone}
             onChange={handleChange}
-            required
             placeholder="090-1234-5678"
-            className="mt-1 w-full rounded border p-2"
+            className={fieldClass("phone")}
           />
+          {errors.phone && (
+            <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders, orderItems, users, addresses } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { createOrderSchema } from "@/lib/validations";
 
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("userId");
@@ -27,6 +28,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
+  const parsed = createOrderSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "入力内容に誤りがあります", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
   const {
     lineUserId,
     displayName,
@@ -34,7 +43,7 @@ export async function POST(request: NextRequest) {
     address,
     paymentMethod,
     items,
-  } = body;
+  } = parsed.data;
 
   // ユーザー upsert
   let user = await db.query.users.findFirst({
