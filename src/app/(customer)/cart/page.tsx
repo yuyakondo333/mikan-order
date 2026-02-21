@@ -16,6 +16,7 @@ export default function CartPage() {
   function updateCart(newCart: CartItemType[]) {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
+    window.dispatchEvent(new Event("cart-updated"));
   }
 
   function handleUpdateQuantity(id: string, quantity: number) {
@@ -48,24 +49,34 @@ export default function CartPage() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-          {cart.map((item) => (
-            <CartItem
-              key={item.id}
-              {...item}
-              onUpdateQuantity={handleUpdateQuantity}
-              onRemove={handleRemove}
-            />
-          ))}
-          <div className="mt-4 flex items-center justify-between border-t pt-4">
-            <span className="text-lg font-bold">
-              合計: ¥{total.toLocaleString()}
-            </span>
+        <div>
+          <div className="rounded-lg bg-white p-4 shadow-sm">
+            {cart.map((item) => (
+              <CartItem
+                key={item.id}
+                {...item}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemove={handleRemove}
+              />
+            ))}
+            <div className="mt-4 flex items-center justify-between border-t pt-4">
+              <span className="text-lg font-bold">
+                合計: ¥{total.toLocaleString()}
+              </span>
+              <Link
+                href="/address"
+                className="rounded-full bg-orange-500 px-6 py-2 text-white hover:bg-orange-600"
+              >
+                注文へ進む
+              </Link>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
             <Link
-              href="/address"
-              className="rounded-full bg-orange-500 px-6 py-2 text-white hover:bg-orange-600"
+              href="/products"
+              className="text-orange-500 underline"
             >
-              注文へ進む
+              買い物を続ける
             </Link>
           </div>
         </div>
