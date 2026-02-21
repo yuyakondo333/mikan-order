@@ -20,8 +20,8 @@ export function CartItem({
   return (
     <div className="flex items-center justify-between border-b py-3">
       <div>
-        <p className="font-medium">{name}</p>
-        <p className="text-sm text-gray-500">¥{priceJpy.toLocaleString()}</p>
+        <p className="font-medium text-gray-900">{name}</p>
+        <p className="text-sm text-gray-700">¥{priceJpy.toLocaleString()}</p>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -31,7 +31,7 @@ export function CartItem({
         >
           -
         </button>
-        <span className="w-6 text-center">{quantity}</span>
+        <span className="w-6 text-center text-gray-900">{quantity}</span>
         <button
           onClick={() => onUpdateQuantity(id, quantity + 1)}
           className="h-8 w-8 rounded-full border text-center"

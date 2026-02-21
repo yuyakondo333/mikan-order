@@ -6,6 +6,7 @@ import type { Product } from "@/types";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/products")
@@ -13,24 +14,27 @@ export default function ProductsPage() {
       .then(setProducts);
   }, []);
 
-  function handleAddToCart(productId: string) {
+  function handleAddToCart(productId: string, quantity: number) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
     const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
     const existing = cart.find((item: { id: string }) => item.id === productId);
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity += quantity;
     } else {
       cart.push({
         id: product.id,
         name: product.name,
         priceJpy: product.priceJpy,
-        quantity: 1,
+        quantity,
       });
     }
     localStorage.setItem("cart", JSON.stringify(cart));
-    alert("カートに追加しました");
+    window.dispatchEvent(new Event("cart-updated"));
+
+    setToast(`${product.name} を ${quantity}個 カートに追加しました`);
+    setTimeout(() => setToast(null), 2000);
   }
 
   return (
@@ -46,7 +50,12 @@ export default function ProductsPage() {
         ))}
       </div>
       {products.length === 0 && (
-        <p className="text-center text-gray-500">商品を読み込み中...</p>
+        <p className="text-center text-gray-700">商品を読み込み中...</p>
+      )}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-gray-800 px-6 py-3 text-sm text-white shadow-lg">
+          {toast}
+        </div>
       )}
     </div>
   );
