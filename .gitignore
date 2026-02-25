@@ -46,6 +46,7 @@ supabase/.temp
 docker-compose.yml
 CLAUDE.md
 .claude/skills/
+skills-lock.json
 
 # typescript
 *.tsbuildinfo
