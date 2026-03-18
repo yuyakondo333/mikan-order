@@ -135,7 +135,7 @@ export default function ConfirmPage() {
               <p>
                 時間帯: {TIME_SLOT_LABELS[fulfillment.pickupTimeSlot]}
               </p>
-              <p>お支払い: 店頭でお支払い</p>
+              <p>お支払い: 受け取り時に現金でお支払い</p>
             </div>
           ) : (
             <div className="space-y-1 text-sm text-gray-700">
@@ -148,7 +148,7 @@ export default function ConfirmPage() {
                 {fulfillment.address.line1}
               </p>
               {fulfillment.address.line2 && <p>{fulfillment.address.line2}</p>}
-              <p>お支払い: 銀行振込（事前入金）</p>
+              <p>お支払い: 銀行振込</p>
             </div>
           )}
         </div>

@@ -111,6 +111,15 @@ export default function AddressPage() {
         </button>
       </div>
 
+      {/* 支払い方法の案内 */}
+      <div className="mb-4 rounded-lg bg-white p-3 text-sm text-gray-600 shadow-sm">
+        {method === "pickup" ? (
+          <p>お支払い: <span className="font-medium text-gray-900">受け取り時に現金でお支払い</span></p>
+        ) : (
+          <p>お支払い: <span className="font-medium text-gray-900">銀行振込</span></p>
+        )}
+      </div>
+
       {/* 取り置きフォーム */}
       {method === "pickup" && (
         <div className="space-y-4">
