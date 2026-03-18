@@ -5,7 +5,13 @@ import { orders, users, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getAllOrders() {
-  return db.select().from(orders);
+  return db.query.orders.findMany({
+    with: {
+      user: true,
+      address: true,
+    },
+    orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+  });
 }
 
 export async function getOrdersByLineUserId(lineUserId: string) {
@@ -49,10 +55,12 @@ export async function getOrderDetail(id: string) {
 
 type OrderStatus =
   | "pending"
-  | "confirmed"
+  | "awaiting_payment"
+  | "payment_confirmed"
   | "preparing"
+  | "ready"
   | "shipped"
-  | "delivered"
+  | "completed"
   | "cancelled";
 
 export async function updateOrderStatus(
