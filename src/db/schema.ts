@@ -5,6 +5,7 @@ import {
   integer,
   boolean,
   timestamp,
+  date,
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -73,6 +74,7 @@ export const orders = pgTable("orders", {
     .notNull()
     .references(() => users.id),
   fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method").notNull(),
+  pickupDate: date("pickup_date"),
   pickupTimeSlot: text("pickup_time_slot"),
   addressId: uuid("address_id").references(() => addresses.id),
   status: orderStatusEnum("status").default("pending").notNull(),

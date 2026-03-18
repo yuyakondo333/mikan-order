@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { TIME_SLOT_LABELS } from "@/lib/constants";
+import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { Address } from "@/types";
 
 type OrderItemDetail = {
@@ -16,6 +16,7 @@ type OrderDetailData = {
   id: string;
   status: string;
   fulfillmentMethod: string;
+  pickupDate: string | null;
   pickupTimeSlot: string | null;
   totalJpy: number;
   note: string | null;
@@ -93,6 +94,12 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
           {order.fulfillmentMethod === "pickup" ? (
             <div className="space-y-1 text-sm text-gray-700">
               <p className="font-medium">取り置き</p>
+              <p>
+                受取日:{" "}
+                {order.pickupDate
+                  ? formatPickupDate(order.pickupDate)
+                  : "未指定"}
+              </p>
               <p>
                 時間帯:{" "}
                 {order.pickupTimeSlot
