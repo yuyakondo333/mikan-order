@@ -50,7 +50,6 @@ export async function sendPickupReadyNotification({
 
 export async function sendOrderConfirmationWithBankTransfer(
   lineUserId: string,
-  orderId: string,
   totalJpy: number
 ) {
   await client.pushMessage({
@@ -61,7 +60,6 @@ export async function sendOrderConfirmationWithBankTransfer(
         text: [
           "🍊 ご注文ありがとうございます！",
           "",
-          `注文ID: ${orderId}`,
           `合計金額: ¥${totalJpy.toLocaleString()}`,
           "",
           "━━━ お振込先 ━━━",
@@ -73,6 +71,35 @@ export async function sendOrderConfirmationWithBankTransfer(
           "━━━━━━━━━━━━",
           "",
           "※ご入金確認後、準備を開始いたします。",
+        ].join("\n"),
+      },
+    ],
+  });
+}
+
+type OrderConfirmationWithPickupParams = {
+  lineUserId: string;
+  pickupDate: string;
+  pickupTimeSlot: string;
+};
+
+export async function sendOrderConfirmationWithPickup({
+  lineUserId,
+  pickupDate,
+  pickupTimeSlot,
+}: OrderConfirmationWithPickupParams) {
+  await client.pushMessage({
+    to: lineUserId,
+    messages: [
+      {
+        type: "text",
+        text: [
+          "🍊 ご注文ありがとうございます！",
+          "",
+          `【受取日】${pickupDate}`,
+          `【受取時間】${pickupTimeSlot}`,
+          "",
+          "店頭にてお支払いください。",
         ].join("\n"),
       },
     ],

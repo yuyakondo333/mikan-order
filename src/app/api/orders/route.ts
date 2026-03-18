@@ -4,7 +4,11 @@ import { orders, orderItems, addresses } from "@/db/schema";
 import { createOrderSchema } from "@/lib/validations";
 import { getAllOrders, getOrdersByLineUserId } from "@/db/queries/orders";
 import { upsertUser } from "@/db/queries/users";
-import { sendOrderConfirmationWithBankTransfer } from "@/lib/line";
+import {
+  sendOrderConfirmationWithBankTransfer,
+  sendOrderConfirmationWithPickup,
+} from "@/lib/line";
+import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,16 +91,22 @@ export async function POST(request: NextRequest) {
       }))
     );
 
-    if (orderData.fulfillmentMethod === "delivery") {
-      try {
-        await sendOrderConfirmationWithBankTransfer(
+    try {
+      if (orderData.fulfillmentMethod === "delivery") {
+        await sendOrderConfirmationWithBankTransfer(lineUserId, totalJpy);
+      } else if (orderData.fulfillmentMethod === "pickup") {
+        const pickupDate = formatPickupDate(orderData.pickupDate);
+        const pickupTimeSlot =
+          TIME_SLOT_LABELS[orderData.pickupTimeSlot] ??
+          orderData.pickupTimeSlot;
+        await sendOrderConfirmationWithPickup({
           lineUserId,
-          order.id,
-          totalJpy
-        );
-      } catch (err) {
-        console.error("Failed to send LINE notification:", err);
+          pickupDate,
+          pickupTimeSlot,
+        });
       }
+    } catch (err) {
+      console.error("Failed to send LINE notification:", err);
     }
 
     return NextResponse.json(order, { status: 201 });
