@@ -44,6 +44,9 @@ supabase/.temp
 # local dev tools
 .mcp.json
 docker-compose.yml
+CLAUDE.md
+.claude/skills/
+skills-lock.json
 
 # typescript
 *.tsbuildinfo
