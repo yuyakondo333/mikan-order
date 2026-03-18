@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { updateOrderStatusAction } from "@/app/actions/orders";
-import { TIME_SLOT_LABELS } from "@/lib/constants";
+import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { Order, Address, User } from "@/types";
 
 const pickupStatuses = [
@@ -170,12 +170,20 @@ export function AdminOrdersTable({
               {/* 受取詳細 */}
               <div className="mt-2 text-sm text-gray-600">
                 {order.fulfillmentMethod === "pickup" ? (
-                  <p>
-                    時間帯:{" "}
-                    {order.pickupTimeSlot
-                      ? TIME_SLOT_LABELS[order.pickupTimeSlot]
-                      : "未指定"}
-                  </p>
+                  <div className="space-y-0.5">
+                    <p>
+                      受取日:{" "}
+                      {order.pickupDate
+                        ? formatPickupDate(order.pickupDate)
+                        : "未指定"}
+                    </p>
+                    <p>
+                      時間帯:{" "}
+                      {order.pickupTimeSlot
+                        ? TIME_SLOT_LABELS[order.pickupTimeSlot]
+                        : "未指定"}
+                    </p>
+                  </div>
                 ) : order.address ? (
                   <p>
                     {order.address.recipientName} - 〒

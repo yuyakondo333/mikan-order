@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
-import { TIME_SLOT_LABELS } from "@/lib/constants";
+import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { CartItemType } from "@/types";
 
 type PickupData = {
   fulfillmentMethod: "pickup";
+  pickupDate: string;
   pickupTimeSlot: string;
 };
 
@@ -128,6 +129,9 @@ export default function ConfirmPage() {
           {fulfillment.fulfillmentMethod === "pickup" ? (
             <div className="space-y-1 text-sm text-gray-700">
               <p className="font-medium">取り置き</p>
+              <p>
+                受取日: {formatPickupDate(fulfillment.pickupDate)}
+              </p>
               <p>
                 時間帯: {TIME_SLOT_LABELS[fulfillment.pickupTimeSlot]}
               </p>

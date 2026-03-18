@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
-import { TIME_SLOT_OPTIONS } from "@/lib/constants";
+import { TIME_SLOT_OPTIONS, getPickupDateOptions } from "@/lib/constants";
 import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
 
 export default function AddressPage() {
   const router = useRouter();
   const { profile } = useLiff();
   const [method, setMethod] = useState<FulfillmentMethod>("pickup");
+  const [pickupDate, setPickupDate] = useState("");
   const [pickupTimeSlot, setPickupTimeSlot] = useState<PickupTimeSlot | "">("");
+  const pickupDateOptions = getPickupDateOptions();
   const [addressForm, setAddressForm] = useState({
     recipientName: "",
     postalCode: "",
@@ -58,7 +60,7 @@ export default function AddressPage() {
     setAddressForm({ ...addressForm, [e.target.name]: e.target.value });
   }
 
-  const isPickupValid = method === "pickup" && pickupTimeSlot !== "";
+  const isPickupValid = method === "pickup" && pickupDate !== "" && pickupTimeSlot !== "";
   const isPostalCodeValid = /^\d{3}-?\d{4}$/.test(addressForm.postalCode.trim());
   const isDeliveryValid =
     method === "delivery" &&
@@ -74,7 +76,7 @@ export default function AddressPage() {
 
     const orderData =
       method === "pickup"
-        ? { fulfillmentMethod: "pickup" as const, pickupTimeSlot }
+        ? { fulfillmentMethod: "pickup" as const, pickupDate, pickupTimeSlot }
         : { fulfillmentMethod: "delivery" as const, address: addressForm };
 
     sessionStorage.setItem("orderFulfillment", JSON.stringify(orderData));
@@ -111,31 +113,53 @@ export default function AddressPage() {
 
       {/* 取り置きフォーム */}
       {method === "pickup" && (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-          <p className="mb-3 font-medium text-gray-900">
-            時間帯を選んでください
-          </p>
-          <div className="space-y-2">
-            {TIME_SLOT_OPTIONS.map((option) => (
-              <label
-                key={option.value}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition ${
-                  pickupTimeSlot === option.value
-                    ? "border-orange-500 bg-orange-50"
-                    : "border-gray-200 hover:border-orange-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="pickupTimeSlot"
-                  value={option.value}
-                  checked={pickupTimeSlot === option.value}
-                  onChange={() => setPickupTimeSlot(option.value)}
-                  className="accent-orange-500"
-                />
-                <span className="text-gray-900">{option.label}</span>
-              </label>
-            ))}
+        <div className="space-y-4">
+          {/* 受取日 */}
+          <div className="rounded-lg bg-white p-4 shadow-sm">
+            <p className="mb-3 font-medium text-gray-900">
+              受取日を選んでください
+            </p>
+            <select
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
+              className="w-full rounded border p-3 text-gray-900"
+            >
+              <option value="">日付を選択</option>
+              {pickupDateOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 受取時間帯 */}
+          <div className="rounded-lg bg-white p-4 shadow-sm">
+            <p className="mb-3 font-medium text-gray-900">
+              時間帯を選んでください
+            </p>
+            <div className="space-y-2">
+              {TIME_SLOT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition ${
+                    pickupTimeSlot === option.value
+                      ? "border-orange-500 bg-orange-50"
+                      : "border-gray-200 hover:border-orange-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="pickupTimeSlot"
+                    value={option.value}
+                    checked={pickupTimeSlot === option.value}
+                    onChange={() => setPickupTimeSlot(option.value)}
+                    className="accent-orange-500"
+                  />
+                  <span className="text-gray-900">{option.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       )}
