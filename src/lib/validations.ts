@@ -17,8 +17,26 @@ export const pickupTimeSlotSchema = z.enum([
   "late_afternoon",
 ]);
 
+export const pickupDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "日付の形式が正しくありません")
+  .refine(
+    (val) => {
+      const date = new Date(val + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 14);
+      return date >= tomorrow && date <= maxDate;
+    },
+    { message: "受取日は翌日から14日以内で選択してください" }
+  );
+
 const pickupOrderSchema = z.object({
   fulfillmentMethod: z.literal("pickup"),
+  pickupDate: pickupDateSchema,
   pickupTimeSlot: pickupTimeSlotSchema,
 });
 

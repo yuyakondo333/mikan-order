@@ -36,6 +36,7 @@ export type Order = {
   id: string;
   userId: string;
   fulfillmentMethod: string;
+  pickupDate: string | null;
   pickupTimeSlot: string | null;
   addressId: string | null;
   status: string;

@@ -23,6 +23,35 @@ export async function getOrdersByLineUserId(lineUserId: string) {
   return db.select().from(orders).where(eq(orders.userId, user.id));
 }
 
+export async function getOrderWithUserAndItems(id: string) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, id),
+    with: {
+      user: true,
+      items: true,
+    },
+  });
+
+  if (!order) return null;
+
+  const itemsWithProduct = await Promise.all(
+    order.items.map(async (item) => {
+      const product = await db.query.products.findFirst({
+        where: eq(products.id, item.productId),
+      });
+      return {
+        ...item,
+        productName: product?.name ?? "不明な商品",
+      };
+    })
+  );
+
+  return {
+    ...order,
+    items: itemsWithProduct,
+  };
+}
+
 export async function getOrderDetail(id: string) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, id),

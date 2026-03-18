@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
       .values({
         userId: user.id,
         fulfillmentMethod: orderData.fulfillmentMethod,
+        pickupDate:
+          orderData.fulfillmentMethod === "pickup"
+            ? orderData.pickupDate
+            : null,
         pickupTimeSlot:
           orderData.fulfillmentMethod === "pickup"
             ? orderData.pickupTimeSlot
