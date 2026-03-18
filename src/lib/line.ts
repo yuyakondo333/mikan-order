@@ -48,4 +48,35 @@ export async function sendPickupReadyNotification({
   });
 }
 
+export async function sendOrderConfirmationWithBankTransfer(
+  lineUserId: string,
+  orderId: string,
+  totalJpy: number
+) {
+  await client.pushMessage({
+    to: lineUserId,
+    messages: [
+      {
+        type: "text",
+        text: [
+          "🍊 ご注文ありがとうございます！",
+          "",
+          `注文ID: ${orderId}`,
+          `合計金額: ¥${totalJpy.toLocaleString()}`,
+          "",
+          "━━━ お振込先 ━━━",
+          "銀行名: ○○銀行",
+          "支店名: △△支店",
+          "口座種別: 普通",
+          "口座番号: 1234567",
+          "口座名義: ミカンノウエン",
+          "━━━━━━━━━━━━",
+          "",
+          "※ご入金確認後、準備を開始いたします。",
+        ].join("\n"),
+      },
+    ],
+  });
+}
+
 export { client as lineClient };
