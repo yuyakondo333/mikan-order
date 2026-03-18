@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/order-status-badge";
+import { TIME_SLOT_LABELS } from "@/lib/constants";
 import type { Address } from "@/types";
-
-const TIME_SLOT_LABELS: Record<string, string> = {
-  morning: "午前中（9:00〜12:00）",
-  early_afternoon: "13:00〜15:00",
-  late_afternoon: "15:00〜17:00",
-};
 
 type OrderItemDetail = {
   id: string;

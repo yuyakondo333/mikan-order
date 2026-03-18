@@ -6,6 +6,8 @@ import Link from "next/link";
 export default function CompletePage() {
   const searchParams = useSearchParams();
   const method = searchParams.get("method");
+  const isPickup = method === "pickup";
+  const isDelivery = method === "delivery";
 
   return (
     <div className="min-h-screen bg-orange-50 p-4">
@@ -15,13 +17,19 @@ export default function CompletePage() {
           ご注文ありがとうございます
         </h1>
 
-        {method === "pickup" ? (
+        {isPickup && (
           <p className="mb-8 text-gray-700">
             準備ができましたらLINEでお知らせします。
           </p>
-        ) : (
+        )}
+        {isDelivery && (
           <p className="mb-8 text-gray-700">
             振込先をLINEでご案内しますので、お振込をお願いいたします。
+          </p>
+        )}
+        {!isPickup && !isDelivery && (
+          <p className="mb-8 text-gray-700">
+            注文の詳細は注文履歴からご確認いただけます。
           </p>
         )}
 

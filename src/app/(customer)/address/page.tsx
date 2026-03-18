@@ -3,13 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
+import { TIME_SLOT_OPTIONS } from "@/lib/constants";
 import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
-
-const TIME_SLOT_OPTIONS: { value: PickupTimeSlot; label: string }[] = [
-  { value: "morning", label: "午前中（9:00〜12:00）" },
-  { value: "early_afternoon", label: "13:00〜15:00" },
-  { value: "late_afternoon", label: "15:00〜17:00" },
-];
 
 export default function AddressPage() {
   const router = useRouter();
@@ -64,10 +59,11 @@ export default function AddressPage() {
   }
 
   const isPickupValid = method === "pickup" && pickupTimeSlot !== "";
+  const isPostalCodeValid = /^\d{3}-?\d{4}$/.test(addressForm.postalCode.trim());
   const isDeliveryValid =
     method === "delivery" &&
     addressForm.recipientName.trim() !== "" &&
-    addressForm.postalCode.trim() !== "" &&
+    isPostalCodeValid &&
     addressForm.prefecture.trim() !== "" &&
     addressForm.city.trim() !== "" &&
     addressForm.line1.trim() !== "";

@@ -3,13 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
+import { TIME_SLOT_LABELS } from "@/lib/constants";
 import type { CartItemType } from "@/types";
-
-const TIME_SLOT_LABELS: Record<string, string> = {
-  morning: "午前中（9:00〜12:00）",
-  early_afternoon: "13:00〜15:00",
-  late_afternoon: "15:00〜17:00",
-};
 
 type PickupData = {
   fulfillmentMethod: "pickup";
@@ -38,16 +33,20 @@ export default function ConfirmPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
-    const storedFulfillment = sessionStorage.getItem("orderFulfillment");
+    try {
+      const storedCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
+      const storedFulfillment = sessionStorage.getItem("orderFulfillment");
 
-    if (storedCart.length === 0 || !storedFulfillment) {
+      if (!Array.isArray(storedCart) || storedCart.length === 0 || !storedFulfillment) {
+        router.replace("/cart");
+        return;
+      }
+
+      setCart(storedCart);
+      setFulfillment(JSON.parse(storedFulfillment));
+    } catch {
       router.replace("/cart");
-      return;
     }
-
-    setCart(storedCart);
-    setFulfillment(JSON.parse(storedFulfillment));
   }, [router]);
 
   const total = cart.reduce(
