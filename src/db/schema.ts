@@ -10,18 +10,20 @@ import {
 import { relations } from "drizzle-orm";
 
 // Enums
-export const orderStatusEnum = pgEnum("order_status", [
-  "pending",
-  "confirmed",
-  "preparing",
-  "shipped",
-  "delivered",
-  "cancelled",
+export const fulfillmentMethodEnum = pgEnum("fulfillment_method", [
+  "pickup",
+  "delivery",
 ]);
 
-export const paymentMethodEnum = pgEnum("payment_method", [
-  "bank_transfer",
-  "cash_on_delivery",
+export const orderStatusEnum = pgEnum("order_status", [
+  "pending",
+  "awaiting_payment",
+  "payment_confirmed",
+  "preparing",
+  "ready",
+  "shipped",
+  "completed",
+  "cancelled",
 ]);
 
 // Users
@@ -40,13 +42,12 @@ export const addresses = pgTable("addresses", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
+  recipientName: text("recipient_name").notNull(),
   postalCode: text("postal_code").notNull(),
   prefecture: text("prefecture").notNull(),
   city: text("city").notNull(),
   line1: text("line1").notNull(),
   line2: text("line2"),
-  phone: text("phone").notNull(),
-  recipientName: text("recipient_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -71,11 +72,10 @@ export const orders = pgTable("orders", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
-  addressId: uuid("address_id")
-    .notNull()
-    .references(() => addresses.id),
+  fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method").notNull(),
+  pickupTimeSlot: text("pickup_time_slot"),
+  addressId: uuid("address_id").references(() => addresses.id),
   status: orderStatusEnum("status").default("pending").notNull(),
-  paymentMethod: paymentMethodEnum("payment_method").notNull(),
   totalJpy: integer("total_jpy").notNull(),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
