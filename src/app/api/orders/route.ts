@@ -35,42 +35,44 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const {
-    lineUserId,
-    displayName,
-    pictureUrl,
-    address,
-    paymentMethod,
-    items,
-  } = parsed.data;
+  const { lineUserId, displayName, pictureUrl, order: orderData, items } =
+    parsed.data;
 
   try {
     const user = await upsertUser({ lineUserId, displayName, pictureUrl });
 
-    // 配送先保存
-    const [newAddress] = await db
-      .insert(addresses)
-      .values({ ...address, userId: user.id })
-      .returning();
-
-    // 合計計算
     const totalJpy = items.reduce(
       (sum, item) => sum + item.priceJpy * item.quantity,
       0
     );
 
-    // 注文作成
+    let addressId: string | null = null;
+    let initialStatus: "pending" | "awaiting_payment" = "pending";
+
+    if (orderData.fulfillmentMethod === "delivery") {
+      const [newAddress] = await db
+        .insert(addresses)
+        .values({ ...orderData.address, userId: user.id })
+        .returning();
+      addressId = newAddress.id;
+      initialStatus = "awaiting_payment";
+    }
+
     const [order] = await db
       .insert(orders)
       .values({
         userId: user.id,
-        addressId: newAddress.id,
-        paymentMethod,
+        fulfillmentMethod: orderData.fulfillmentMethod,
+        pickupTimeSlot:
+          orderData.fulfillmentMethod === "pickup"
+            ? orderData.pickupTimeSlot
+            : null,
+        addressId,
+        status: initialStatus,
         totalJpy,
       })
       .returning();
 
-    // 注文明細作成
     await db.insert(orderItems).values(
       items.map((item) => ({
         orderId: order.id,

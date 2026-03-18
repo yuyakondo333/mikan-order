@@ -9,13 +9,28 @@ export const addressSchema = z.object({
   city: z.string().min(1, "市区町村を入力してください"),
   line1: z.string().min(1, "番地を入力してください"),
   line2: z.string().optional().default(""),
-  phone: z
-    .string()
-    .regex(
-      /^0\d{1,4}-?\d{1,4}-?\d{3,4}$/,
-      "電話番号の形式が正しくありません（例: 090-1234-5678）"
-    ),
 });
+
+export const pickupTimeSlotSchema = z.enum([
+  "morning",
+  "early_afternoon",
+  "late_afternoon",
+]);
+
+const pickupOrderSchema = z.object({
+  fulfillmentMethod: z.literal("pickup"),
+  pickupTimeSlot: pickupTimeSlotSchema,
+});
+
+const deliveryOrderSchema = z.object({
+  fulfillmentMethod: z.literal("delivery"),
+  address: addressSchema,
+});
+
+export const fulfillmentSchema = z.discriminatedUnion("fulfillmentMethod", [
+  pickupOrderSchema,
+  deliveryOrderSchema,
+]);
 
 export const orderItemSchema = z.object({
   id: z.string().uuid(),
@@ -27,8 +42,7 @@ export const createOrderSchema = z.object({
   lineUserId: z.string().min(1),
   displayName: z.string().min(1),
   pictureUrl: z.string().nullable().optional(),
-  address: addressSchema,
-  paymentMethod: z.enum(["bank_transfer", "cash_on_delivery"]),
+  order: fulfillmentSchema,
   items: z.array(orderItemSchema).min(1, "カートが空です"),
 });
 
@@ -44,3 +58,5 @@ export const productSchema = z.object({
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
+export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;
+export type FulfillmentData = z.infer<typeof fulfillmentSchema>;

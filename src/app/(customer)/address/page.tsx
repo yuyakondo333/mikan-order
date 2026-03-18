@@ -3,27 +3,22 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
-import { addressSchema } from "@/lib/validations";
-
-type FieldErrors = Partial<Record<string, string>>;
+import { TIME_SLOT_OPTIONS } from "@/lib/constants";
+import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
 
 export default function AddressPage() {
   const router = useRouter();
   const { profile } = useLiff();
-  const [form, setForm] = useState({
+  const [method, setMethod] = useState<FulfillmentMethod>("pickup");
+  const [pickupTimeSlot, setPickupTimeSlot] = useState<PickupTimeSlot | "">("");
+  const [addressForm, setAddressForm] = useState({
+    recipientName: "",
     postalCode: "",
     prefecture: "",
     city: "",
     line1: "",
     line2: "",
-    phone: "",
-    recipientName: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState<
-    "bank_transfer" | "cash_on_delivery"
-  >("cash_on_delivery");
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<FieldErrors>({});
   const [loadingAddress, setLoadingAddress] = useState(true);
 
   useEffect(() => {
@@ -41,14 +36,13 @@ export default function AddressPage() {
         const data = await res.json();
         if (data.length > 0) {
           const latest = data[0];
-          setForm({
+          setAddressForm({
+            recipientName: latest.recipientName ?? "",
             postalCode: latest.postalCode ?? "",
             prefecture: latest.prefecture ?? "",
             city: latest.city ?? "",
             line1: latest.line1 ?? "",
             line2: latest.line2 ?? "",
-            phone: latest.phone ?? "",
-            recipientName: latest.recipientName ?? "",
           });
         }
       } catch {
@@ -60,215 +54,181 @@ export default function AddressPage() {
     fetchSavedAddress();
   }, [profile]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: undefined });
-    }
+  function handleAddressChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setAddressForm({ ...addressForm, [e.target.name]: e.target.value });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!profile) return;
+  const isPickupValid = method === "pickup" && pickupTimeSlot !== "";
+  const isPostalCodeValid = /^\d{3}-?\d{4}$/.test(addressForm.postalCode.trim());
+  const isDeliveryValid =
+    method === "delivery" &&
+    addressForm.recipientName.trim() !== "" &&
+    isPostalCodeValid &&
+    addressForm.prefecture.trim() !== "" &&
+    addressForm.city.trim() !== "" &&
+    addressForm.line1.trim() !== "";
+  const canProceed = isPickupValid || isDeliveryValid;
 
-    const result = addressSchema.safeParse(form);
-    if (!result.success) {
-      const fieldErrors: FieldErrors = {};
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as string;
-        if (!fieldErrors[field]) {
-          fieldErrors[field] = issue.message;
-        }
-      }
-      setErrors(fieldErrors);
-      return;
-    }
+  function handleProceed() {
+    if (!canProceed) return;
 
-    setSubmitting(true);
-    setErrors({});
+    const orderData =
+      method === "pickup"
+        ? { fulfillmentMethod: "pickup" as const, pickupTimeSlot }
+        : { fulfillmentMethod: "delivery" as const, address: addressForm };
 
-    try {
-      const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
-      if (cart.length === 0) {
-        alert("カートが空です");
-        return;
-      }
-
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lineUserId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl,
-          address: result.data,
-          paymentMethod,
-          items: cart,
-        }),
-      });
-
-      if (res.ok) {
-        localStorage.removeItem("cart");
-        router.push("/orders");
-      } else {
-        alert("注文に失敗しました");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function fieldClass(name: string) {
-    return `mt-1 w-full rounded border p-2 ${errors[name] ? "border-red-500" : ""}`;
+    sessionStorage.setItem("orderFulfillment", JSON.stringify(orderData));
+    router.push("/confirm");
   }
 
   return (
     <div className="min-h-screen bg-orange-50 p-4">
-      <h1 className="mb-6 text-2xl font-bold text-orange-600">
-        配送先・お支払い
-      </h1>
-      {loadingAddress ? (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-300 border-t-orange-600" />
-        </div>
-      ) : (
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-lg bg-white p-4 shadow-sm"
+      <h1 className="mb-6 text-2xl font-bold text-orange-600">受取方法</h1>
+
+      {/* 受取方法選択 */}
+      <div className="mb-4 flex gap-3">
+        <button
+          onClick={() => setMethod("pickup")}
+          className={`flex-1 rounded-lg border-2 py-3 text-center font-medium transition ${
+            method === "pickup"
+              ? "border-orange-500 bg-orange-500 text-white"
+              : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+          }`}
         >
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              受取人名
-            </label>
-            <input
-              name="recipientName"
-              value={form.recipientName}
-              onChange={handleChange}
-              className={fieldClass("recipientName")}
-            />
-            {errors.recipientName && (
-              <p className="mt-1 text-sm text-red-600">{errors.recipientName}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              郵便番号
-            </label>
-            <input
-              name="postalCode"
-              value={form.postalCode}
-              onChange={handleChange}
-              placeholder="123-4567"
-              className={fieldClass("postalCode")}
-            />
-            {errors.postalCode && (
-              <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              都道府県
-            </label>
-            <input
-              name="prefecture"
-              value={form.prefecture}
-              onChange={handleChange}
-              className={fieldClass("prefecture")}
-            />
-            {errors.prefecture && (
-              <p className="mt-1 text-sm text-red-600">{errors.prefecture}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              市区町村
-            </label>
-            <input
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              className={fieldClass("city")}
-            />
-            {errors.city && (
-              <p className="mt-1 text-sm text-red-600">{errors.city}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              番地・建物名
-            </label>
-            <input
-              name="line1"
-              value={form.line1}
-              onChange={handleChange}
-              className={fieldClass("line1")}
-            />
-            {errors.line1 && (
-              <p className="mt-1 text-sm text-red-600">{errors.line1}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              建物名・部屋番号（任意）
-            </label>
-            <input
-              name="line2"
-              value={form.line2}
-              onChange={handleChange}
-              className={fieldClass("line2")}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              電話番号
-            </label>
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="090-1234-5678"
-              className={fieldClass("phone")}
-            />
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900">
-              お支払い方法
-            </label>
-            <div className="mt-2 space-y-2">
-              <label className="flex items-center gap-2">
+          取り置き
+        </button>
+        <button
+          onClick={() => setMethod("delivery")}
+          className={`flex-1 rounded-lg border-2 py-3 text-center font-medium transition ${
+            method === "delivery"
+              ? "border-orange-500 bg-orange-500 text-white"
+              : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+          }`}
+        >
+          お届け
+        </button>
+      </div>
+
+      {/* 取り置きフォーム */}
+      {method === "pickup" && (
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          <p className="mb-3 font-medium text-gray-900">
+            時間帯を選んでください
+          </p>
+          <div className="space-y-2">
+            {TIME_SLOT_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3 transition ${
+                  pickupTimeSlot === option.value
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-200 hover:border-orange-300"
+                }`}
+              >
                 <input
                   type="radio"
-                  name="paymentMethod"
-                  value="cash_on_delivery"
-                  checked={paymentMethod === "cash_on_delivery"}
-                  onChange={() => setPaymentMethod("cash_on_delivery")}
+                  name="pickupTimeSlot"
+                  value={option.value}
+                  checked={pickupTimeSlot === option.value}
+                  onChange={() => setPickupTimeSlot(option.value)}
+                  className="accent-orange-500"
                 />
-                代金引換
+                <span className="text-gray-900">{option.label}</span>
               </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="bank_transfer"
-                  checked={paymentMethod === "bank_transfer"}
-                  onChange={() => setPaymentMethod("bank_transfer")}
-                />
-                銀行振込
-              </label>
-            </div>
+            ))}
           </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:opacity-50"
-          >
-            {submitting ? "送信中..." : "注文を確定する"}
-          </button>
-        </form>
+        </div>
       )}
+
+      {/* お届けフォーム */}
+      {method === "delivery" && (
+        <div className="rounded-lg bg-white p-4 shadow-sm">
+          {loadingAddress ? (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-300 border-t-orange-600" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  受取人名
+                </label>
+                <input
+                  name="recipientName"
+                  value={addressForm.recipientName}
+                  onChange={handleAddressChange}
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  郵便番号
+                </label>
+                <input
+                  name="postalCode"
+                  value={addressForm.postalCode}
+                  onChange={handleAddressChange}
+                  placeholder="123-4567"
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  都道府県
+                </label>
+                <input
+                  name="prefecture"
+                  value={addressForm.prefecture}
+                  onChange={handleAddressChange}
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  市区町村
+                </label>
+                <input
+                  name="city"
+                  value={addressForm.city}
+                  onChange={handleAddressChange}
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  番地
+                </label>
+                <input
+                  name="line1"
+                  value={addressForm.line1}
+                  onChange={handleAddressChange}
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  建物名・部屋番号（任意）
+                </label>
+                <input
+                  name="line2"
+                  value={addressForm.line2}
+                  onChange={handleAddressChange}
+                  className="mt-1 w-full rounded border p-2"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 確認画面へ進むボタン */}
+      <button
+        onClick={handleProceed}
+        disabled={!canProceed}
+        className="mt-6 w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        確認画面へ進む
+      </button>
     </div>
   );
 }

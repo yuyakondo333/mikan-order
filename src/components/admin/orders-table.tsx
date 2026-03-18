@@ -3,33 +3,66 @@
 import { useMemo, useState } from "react";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { updateOrderStatusAction } from "@/app/actions/orders";
-import type { Order } from "@/types";
+import { TIME_SLOT_LABELS } from "@/lib/constants";
+import type { Order, Address, User } from "@/types";
 
-const statuses = [
+const pickupStatuses = [
   "pending",
-  "confirmed",
+  "preparing",
+  "ready",
+  "completed",
+  "cancelled",
+] as const;
+
+const deliveryStatuses = [
+  "pending",
+  "awaiting_payment",
+  "payment_confirmed",
   "preparing",
   "shipped",
-  "delivered",
+  "completed",
+  "cancelled",
+] as const;
+
+const allStatuses = [
+  "pending",
+  "awaiting_payment",
+  "payment_confirmed",
+  "preparing",
+  "ready",
+  "shipped",
+  "completed",
   "cancelled",
 ] as const;
 
 const statusLabels: Record<string, string> = {
   all: "全件",
-  pending: "受付中",
-  confirmed: "確認済み",
+  pending: "注文受付",
+  awaiting_payment: "入金待ち",
+  payment_confirmed: "入金確認済",
   preparing: "準備中",
-  shipped: "発送済み",
-  delivered: "配達完了",
+  ready: "準備完了",
+  shipped: "発送済",
+  completed: "完了",
   cancelled: "キャンセル",
+};
+
+const fulfillmentLabels: Record<string, string> = {
+  pickup: "取り置き",
+  delivery: "お届け",
 };
 
 type SortOrder = "newest" | "oldest";
 
+type OrderWithRelations = Order & {
+  user?: User | null;
+  address?: Address | null;
+};
+
 export function AdminOrdersTable({
   initialOrders,
 }: {
-  initialOrders: Order[];
+  initialOrders: OrderWithRelations[];
 }) {
   const [orders, setOrders] = useState(initialOrders);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -57,12 +90,16 @@ export function AdminOrdersTable({
     );
   }
 
+  function getStatusOptions(fulfillmentMethod: string) {
+    return fulfillmentMethod === "pickup" ? pickupStatuses : deliveryStatuses;
+  }
+
   return (
     <div>
       {/* フィルタ・ソート */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-1">
-          {["all", ...statuses].map((s) => (
+          {["all", ...allStatuses].map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
@@ -110,21 +147,59 @@ export function AdminOrdersTable({
                   <p className="font-bold">
                     ¥{order.totalJpy.toLocaleString()}
                   </p>
+                  {order.user && (
+                    <p className="text-sm text-gray-600">
+                      {order.user.displayName}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <OrderStatusBadge status={order.status} />
-                  <select
-                    value={order.status}
-                    onChange={(e) => updateStatus(order.id, e.target.value)}
-                    className="rounded border p-1 text-sm"
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      order.fulfillmentMethod === "pickup"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-sky-100 text-sky-800"
+                    }`}
                   >
-                    {statuses.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    {fulfillmentLabels[order.fulfillmentMethod]}
+                  </span>
+                  <OrderStatusBadge status={order.status} />
                 </div>
+              </div>
+
+              {/* 受取詳細 */}
+              <div className="mt-2 text-sm text-gray-600">
+                {order.fulfillmentMethod === "pickup" ? (
+                  <p>
+                    時間帯:{" "}
+                    {order.pickupTimeSlot
+                      ? TIME_SLOT_LABELS[order.pickupTimeSlot]
+                      : "未指定"}
+                  </p>
+                ) : order.address ? (
+                  <p>
+                    {order.address.recipientName} - 〒
+                    {order.address.postalCode}{" "}
+                    {order.address.prefecture}
+                    {order.address.city}
+                    {order.address.line1}
+                  </p>
+                ) : null}
+              </div>
+
+              {/* ステータス変更 */}
+              <div className="mt-3 flex justify-end">
+                <select
+                  value={order.status}
+                  onChange={(e) => updateStatus(order.id, e.target.value)}
+                  className="rounded border p-1 text-sm"
+                >
+                  {getStatusOptions(order.fulfillmentMethod).map((s) => (
+                    <option key={s} value={s}>
+                      {statusLabels[s]}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           ))}
