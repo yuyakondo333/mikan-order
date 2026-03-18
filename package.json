@@ -6,7 +6,8 @@
     "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:richmenu": "npx tsx scripts/setup-richmenu.ts"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.6.0",

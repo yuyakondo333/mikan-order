@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getAllProducts } from "@/db/queries/products";
 import { AdminProductsManager } from "@/components/admin/products-manager";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "商品管理",
 };

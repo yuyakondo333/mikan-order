@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getAllOrders } from "@/db/queries/orders";
 import { AdminOrdersTable } from "@/components/admin/orders-table";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "注文管理",
 };
