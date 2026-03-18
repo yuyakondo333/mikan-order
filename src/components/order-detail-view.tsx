@@ -2,6 +2,12 @@ import Link from "next/link";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import type { Address } from "@/types";
 
+const TIME_SLOT_LABELS: Record<string, string> = {
+  morning: "午前中（9:00〜12:00）",
+  early_afternoon: "13:00〜15:00",
+  late_afternoon: "15:00〜17:00",
+};
+
 type OrderItemDetail = {
   id: string;
   productId: string;
@@ -14,17 +20,13 @@ type OrderItemDetail = {
 type OrderDetailData = {
   id: string;
   status: string;
-  paymentMethod: string;
+  fulfillmentMethod: string;
+  pickupTimeSlot: string | null;
   totalJpy: number;
   note: string | null;
   createdAt: Date | string;
-  address: Address;
+  address: Address | null;
   items: OrderItemDetail[];
-};
-
-const paymentLabels: Record<string, string> = {
-  bank_transfer: "銀行振込",
-  cash_on_delivery: "代金引換",
 };
 
 export function OrderDetailView({ order }: { order: OrderDetailData }) {
@@ -34,7 +36,7 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
         href="/orders"
         className="mb-4 inline-block text-sm text-orange-600 hover:underline"
       >
-        ← 注文履歴に戻る
+        &larr; 注文履歴に戻る
       </Link>
       <h1 className="mb-6 text-2xl font-bold text-orange-600">注文詳細</h1>
 
@@ -53,10 +55,6 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
             </span>
             <OrderStatusBadge status={order.status} />
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            お支払い:{" "}
-            {paymentLabels[order.paymentMethod] ?? order.paymentMethod}
-          </p>
         </div>
 
         {/* 商品一覧 */}
@@ -94,20 +92,38 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
           </div>
         </div>
 
-        {/* 配送先 */}
+        {/* 受取方法 */}
         <div className="rounded-lg bg-white p-4 shadow-sm">
-          <h2 className="mb-3 font-bold text-gray-900">配送先</h2>
-          <div className="space-y-1 text-sm text-gray-700">
-            <p className="font-medium">{order.address.recipientName}</p>
-            <p>〒{order.address.postalCode}</p>
-            <p>
-              {order.address.prefecture}
-              {order.address.city}
-              {order.address.line1}
-            </p>
-            {order.address.line2 && <p>{order.address.line2}</p>}
-            <p>TEL: {order.address.phone}</p>
-          </div>
+          <h2 className="mb-3 font-bold text-gray-900">受取方法</h2>
+          {order.fulfillmentMethod === "pickup" ? (
+            <div className="space-y-1 text-sm text-gray-700">
+              <p className="font-medium">取り置き</p>
+              <p>
+                時間帯:{" "}
+                {order.pickupTimeSlot
+                  ? TIME_SLOT_LABELS[order.pickupTimeSlot] ?? order.pickupTimeSlot
+                  : "未指定"}
+              </p>
+              <p>お支払い: 店頭でお支払い</p>
+            </div>
+          ) : (
+            <div className="space-y-1 text-sm text-gray-700">
+              <p className="font-medium">お届け</p>
+              {order.address && (
+                <>
+                  <p>{order.address.recipientName}</p>
+                  <p>〒{order.address.postalCode}</p>
+                  <p>
+                    {order.address.prefecture}
+                    {order.address.city}
+                    {order.address.line1}
+                  </p>
+                  {order.address.line2 && <p>{order.address.line2}</p>}
+                </>
+              )}
+              <p>お支払い: 銀行振込（事前入金）</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
