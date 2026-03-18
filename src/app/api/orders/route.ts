@@ -4,6 +4,7 @@ import { orders, orderItems, addresses } from "@/db/schema";
 import { createOrderSchema } from "@/lib/validations";
 import { getAllOrders, getOrdersByLineUserId } from "@/db/queries/orders";
 import { upsertUser } from "@/db/queries/users";
+import { sendOrderConfirmationWithBankTransfer } from "@/lib/line";
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,6 +86,18 @@ export async function POST(request: NextRequest) {
         unitPriceJpy: item.priceJpy,
       }))
     );
+
+    if (orderData.fulfillmentMethod === "delivery") {
+      try {
+        await sendOrderConfirmationWithBankTransfer(
+          lineUserId,
+          order.id,
+          totalJpy
+        );
+      } catch (err) {
+        console.error("Failed to send LINE notification:", err);
+      }
+    }
 
     return NextResponse.json(order, { status: 201 });
   } catch (e) {
