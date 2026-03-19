@@ -16,6 +16,8 @@ type ProductForm = {
   weightGrams: string;
   priceJpy: string;
   description: string;
+  stock: string;
+  stockUnit: string;
   isAvailable: boolean;
 };
 
@@ -25,6 +27,8 @@ const emptyForm: ProductForm = {
   weightGrams: "",
   priceJpy: "",
   description: "",
+  stock: "0",
+  stockUnit: "kg",
   isAvailable: true,
 };
 
@@ -57,6 +61,8 @@ export function AdminProductsManager({
       weightGrams: String(product.weightGrams),
       priceJpy: String(product.priceJpy),
       description: product.description ?? "",
+      stock: String(product.stock),
+      stockUnit: product.stockUnit,
       isAvailable: product.isAvailable,
     });
     setErrors({});
@@ -79,6 +85,8 @@ export function AdminProductsManager({
       weightGrams: Number(form.weightGrams),
       priceJpy: Number(form.priceJpy),
       description: form.description || undefined,
+      stock: Number(form.stock),
+      stockUnit: form.stockUnit,
       isAvailable: form.isAvailable,
     });
 
@@ -232,6 +240,43 @@ export function AdminProductsManager({
                 <p className="mt-1 text-sm text-red-600">{errors.priceJpy}</p>
               )}
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                在庫数 *
+              </label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={form.stock}
+                onChange={(e) =>
+                  setForm({ ...form, stock: e.target.value })
+                }
+                className={`mt-1 w-full rounded border p-2 ${errors.stock ? "border-red-500" : ""}`}
+              />
+              {errors.stock && (
+                <p className="mt-1 text-sm text-red-600">{errors.stock}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                在庫単位 *
+              </label>
+              <select
+                value={form.stockUnit}
+                onChange={(e) =>
+                  setForm({ ...form, stockUnit: e.target.value })
+                }
+                className={`mt-1 w-full rounded border p-2 ${errors.stockUnit ? "border-red-500" : ""}`}
+              >
+                <option value="kg">kg</option>
+                <option value="箱">箱</option>
+                <option value="個">個</option>
+              </select>
+              {errors.stockUnit && (
+                <p className="mt-1 text-sm text-red-600">{errors.stockUnit}</p>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -293,7 +338,7 @@ export function AdminProductsManager({
                   <p className="font-bold">{product.name}</p>
                   <p className="text-sm text-gray-500">
                     {product.variety} / {product.weightGrams}g /
-                    ¥{product.priceJpy.toLocaleString()}
+                    ¥{product.priceJpy.toLocaleString()} / 在庫: {product.stock}{product.stockUnit}
                   </p>
                   {product.description && (
                     <p className="mt-1 text-sm text-gray-400">
