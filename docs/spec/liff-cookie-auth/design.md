@@ -111,7 +111,7 @@ const liffProvider = Credentials({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [liffProvider],
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30日
+  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 }, // 7日
   pages: { signIn: "/products" }, // LIFF内で自動認証するのでsignInページ不要
   callbacks: {
     async jwt({ token, user }) {
@@ -276,30 +276,46 @@ export default async function AddressPage() {
 
 - `useLiff()` → `useSession()` に変更
 - `profile.userId` → `session.user.lineUserId` に変更
-- API呼び出し時の `lineUserId`, `displayName`, `pictureUrl` をsessionから取得
+- API呼び出し時の `lineUserId`, `displayName`, `pictureUrl` をbodyから除去
+
+### 10. `src/app/api/orders/route.ts` POST（変更）
+
+**レビュー指摘 #2 反映**: 注文作成はサーバーサイドで auth() からユーザー情報を取得する。
+
+- body から `lineUserId`, `displayName`, `pictureUrl` を除去
+- `auth()` でセッションから lineUserId を取得
+- 未認証の場合は 401 を返す
 
 ## middleware.ts の方針
 
-既存のadmin認証ミドルウェアと共存させる:
+**Auth.jsをmiddlewareに組み込まない。** 既存のadmin認証ミドルウェアをそのまま維持する。
 
 ```ts
-export { auth as middleware } from "@/auth"
-
-export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/api/admin/:path*",
-    // 顧客ルートは含めない（LIFFで自動認証するため、middlewareでブロックしない）
-  ],
+// 変更なし — 既存のまま
+export function middleware(request: NextRequest) {
+  // admin認証のみ（既存ロジック維持）
 }
 ```
 
-**判断**: 顧客ルートではmiddlewareで認証チェックしない。理由:
-- LIFF内で自動的にsignInが走る
-- 未認証時はデータなし表示（エラーではない）
-- middlewareは「ページへのアクセスを拒否」するものだが、LIFFアプリでは全ページにアクセスできるべき
+**理由**（レビュー指摘 #1 反映）:
+- `export { auth as middleware }` は既存のadmin認証ロジックを上書きしてしまう
+- 顧客認証はDAL（`verifySession`）のみで行う
+- 顧客ルートではmiddlewareでブロックしない（LIFFで自動認証するため）
+- admin認証は既存のcookie検証を維持する（Auth.jsとは別管理）
 
-admin認証は既存のcookie検証を維持する（Auth.jsとは別管理）。
+## 初回訪問時のUXフロー
+
+**レビュー指摘 #3 反映**: SC初回レンダリング時、セッションcookieがまだないため空データになる。
+
+```
+1. ユーザーがページにアクセス
+2. SC: auth() → null → 空データでレンダリング
+3. CC: LiffProvider の useEffect → LIFF init → signIn → セッションcookie生成
+4. signIn成功後: router.refresh() で SC を再レンダリング
+5. SC: auth() → session あり → DB からデータ取得
+```
+
+LiffProvider の signIn 成功後に `router.refresh()` を呼び、SC を再レンダリングさせる。
 
 ## 環境変数
 
@@ -322,11 +338,12 @@ DATABASE_URL=
 - `src/app/api/auth/[...nextauth]/route.ts` 作成
 - `src/types/next-auth.d.ts` 作成
 - `.env.local` に AUTH_SECRET 追加
+- Vercel 環境変数にも AUTH_SECRET を設定
 - 型チェック通ることを確認
 
 ### Step 2: LiffProvider + layout のAuth.js統合
 - `src/app/(customer)/layout.tsx` に SessionProvider 追加
-- `src/components/liff-provider.tsx` を改修（signIn統合）
+- `src/components/liff-provider.tsx` を改修（signIn統合 + signIn失敗時のエラーハンドリング + signIn成功後のrouter.refresh()）
 - `src/lib/liff.ts` に `getIDToken` ヘルパー追加（必要に応じて）
 - 動作確認: LIFF初期化 → signIn → セッションcookie生成
 
@@ -339,9 +356,10 @@ DATABASE_URL=
 - `src/app/(customer)/address/page.tsx` をSCデータ取得に変更
 - `src/components/address-form.tsx` のfetchロジック削除、props受け取りに変更
 
-### Step 5: confirm-contentのuserId取得方式統一
-- `src/components/confirm-content.tsx` の `useLiff()` → `useSession()` 変更
-- `src/components/customer-header.tsx` の `useLiff()` → `useSession()` 変更（必要に応じて）
+### Step 5: confirm-content + orders POST のサーバーサイド認証統一
+- `src/components/confirm-content.tsx` の `useLiff()` → `useSession()` 変更（bodyからuserInfo除去）
+- `src/app/api/orders/route.ts` POST を改修: auth() からユーザー情報取得、body から lineUserId/displayName/pictureUrl 除去
+- `src/components/customer-header.tsx` は useLiff() 非依存のため変更不要
 
 ### Step 6: 不要コード削除 + クリーンアップ
 - `src/app/api/liff/verify/route.ts` 削除
