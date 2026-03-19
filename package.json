@@ -10,6 +10,8 @@
     "setup:richmenu": "npx tsx scripts/setup-richmenu.ts"
   },
   "dependencies": {
+    "@conform-to/react": "^1.17.1",
+    "@conform-to/zod": "^1.17.1",
     "@line/bot-sdk": "^10.6.0",
     "@line/liff": "^2.27.3",
     "drizzle-orm": "^0.45.1",
