@@ -7,7 +7,7 @@ import type { Product } from "@/types";
 
 export function ProductList({ products }: { products: Product[] }) {
   const [toast, setToast] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   function handleAddToCart(productId: string, quantity: number) {
     const product = products.find((p) => p.id === productId);

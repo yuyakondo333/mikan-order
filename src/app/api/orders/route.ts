@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, addresses, products } from "@/db/schema";
+import { orders, orderItems, addresses } from "@/db/schema";
 import { fulfillmentSchema } from "@/lib/validations";
 import { getAllOrders } from "@/db/queries/orders";
 import { upsertUser } from "@/db/queries/users";
@@ -12,7 +12,6 @@ import {
 } from "@/lib/line";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { auth } from "@/auth";
-import { inArray } from "drizzle-orm";
 
 export async function GET() {
   try {

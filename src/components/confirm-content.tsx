@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { CartItemWithProduct } from "@/types";
@@ -25,23 +25,34 @@ type DeliveryData = {
 
 type FulfillmentData = PickupData | DeliveryData;
 
+function getFulfillmentFromStorage(): FulfillmentData | null {
+  try {
+    const stored = sessionStorage.getItem("orderFulfillment");
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function subscribe() {
+  // sessionStorageは変更通知がないので空のunsubscribe
+  return () => {};
+}
+
 export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
   const router = useRouter();
-  const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
+  const fulfillment = useSyncExternalStore(
+    subscribe,
+    getFulfillmentFromStorage,
+    () => null
+  );
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    try {
-      const storedFulfillment = sessionStorage.getItem("orderFulfillment");
-      if (!storedFulfillment) {
-        router.replace("/cart");
-        return;
-      }
-      setFulfillment(JSON.parse(storedFulfillment));
-    } catch {
+    if (!fulfillment) {
       router.replace("/cart");
     }
-  }, [router]);
+  }, [fulfillment, router]);
 
   const total = items.reduce(
     (sum, item) => sum + item.priceJpy * item.quantity,
