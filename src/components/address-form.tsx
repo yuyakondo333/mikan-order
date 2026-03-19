@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLiff } from "@/components/liff-provider";
+import { DeliveryAddressFields } from "@/components/delivery-address-fields";
 import { TIME_SLOT_OPTIONS, getPickupDateOptions } from "@/lib/constants";
+import type { AddressFormData } from "@/lib/validations";
 import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
 
 export function AddressForm() {
@@ -13,7 +15,7 @@ export function AddressForm() {
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTimeSlot, setPickupTimeSlot] = useState<PickupTimeSlot | "">("");
   const pickupDateOptions = getPickupDateOptions();
-  const [addressForm, setAddressForm] = useState({
+  const [savedAddress, setSavedAddress] = useState<AddressFormData>({
     recipientName: "",
     postalCode: "",
     prefecture: "",
@@ -38,7 +40,7 @@ export function AddressForm() {
         const data = await res.json();
         if (data.length > 0) {
           const latest = data[0];
-          setAddressForm({
+          setSavedAddress({
             recipientName: latest.recipientName ?? "",
             postalCode: latest.postalCode ?? "",
             prefecture: latest.prefecture ?? "",
@@ -56,29 +58,17 @@ export function AddressForm() {
     fetchSavedAddress();
   }, [profile]);
 
-  function handleAddressChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setAddressForm({ ...addressForm, [e.target.name]: e.target.value });
+  const isPickupValid = method === "pickup" && pickupDate !== "" && pickupTimeSlot !== "";
+
+  function handlePickupProceed() {
+    if (!isPickupValid) return;
+    const orderData = { fulfillmentMethod: "pickup" as const, pickupDate, pickupTimeSlot };
+    sessionStorage.setItem("orderFulfillment", JSON.stringify(orderData));
+    router.push("/confirm");
   }
 
-  const isPickupValid = method === "pickup" && pickupDate !== "" && pickupTimeSlot !== "";
-  const isPostalCodeValid = /^\d{3}-?\d{4}$/.test(addressForm.postalCode.trim());
-  const isDeliveryValid =
-    method === "delivery" &&
-    addressForm.recipientName.trim() !== "" &&
-    isPostalCodeValid &&
-    addressForm.prefecture.trim() !== "" &&
-    addressForm.city.trim() !== "" &&
-    addressForm.line1.trim() !== "";
-  const canProceed = isPickupValid || isDeliveryValid;
-
-  function handleProceed() {
-    if (!canProceed) return;
-
-    const orderData =
-      method === "pickup"
-        ? { fulfillmentMethod: "pickup" as const, pickupDate, pickupTimeSlot }
-        : { fulfillmentMethod: "delivery" as const, address: addressForm };
-
+  function handleDeliverySubmit(address: AddressFormData) {
+    const orderData = { fulfillmentMethod: "delivery" as const, address };
     sessionStorage.setItem("orderFulfillment", JSON.stringify(orderData));
     router.push("/confirm");
   }
@@ -181,87 +171,25 @@ export function AddressForm() {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-300 border-t-orange-600" />
             </div>
           ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  受取人名
-                </label>
-                <input
-                  name="recipientName"
-                  value={addressForm.recipientName}
-                  onChange={handleAddressChange}
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  郵便番号
-                </label>
-                <input
-                  name="postalCode"
-                  value={addressForm.postalCode}
-                  onChange={handleAddressChange}
-                  placeholder="123-4567"
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  都道府県
-                </label>
-                <input
-                  name="prefecture"
-                  value={addressForm.prefecture}
-                  onChange={handleAddressChange}
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  市区町村
-                </label>
-                <input
-                  name="city"
-                  value={addressForm.city}
-                  onChange={handleAddressChange}
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  番地
-                </label>
-                <input
-                  name="line1"
-                  value={addressForm.line1}
-                  onChange={handleAddressChange}
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900">
-                  建物名・部屋番号（任意）
-                </label>
-                <input
-                  name="line2"
-                  value={addressForm.line2}
-                  onChange={handleAddressChange}
-                  className="mt-1 w-full rounded border p-2"
-                />
-              </div>
-            </div>
+            <DeliveryAddressFields
+              key={JSON.stringify(savedAddress)}
+              defaultAddress={savedAddress}
+              onValidSubmit={handleDeliverySubmit}
+            />
           )}
         </div>
       )}
 
-      {/* 確認画面へ進むボタン */}
-      <button
-        onClick={handleProceed}
-        disabled={!canProceed}
-        className="mt-6 w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        確認画面へ進む
-      </button>
+      {/* 取り置き: 確認画面へ進むボタン */}
+      {method === "pickup" && (
+        <button
+          onClick={handlePickupProceed}
+          disabled={!isPickupValid}
+          className="mt-6 w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          確認画面へ進む
+        </button>
+      )}
     </div>
   );
 }

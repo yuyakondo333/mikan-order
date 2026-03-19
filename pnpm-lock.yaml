@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@conform-to/react':
+        specifier: ^1.17.1
+        version: 1.17.1(react@19.2.3)
+      '@conform-to/zod':
+        specifier: ^1.17.1
+        version: 1.17.1(zod@4.3.6)
       '@line/bot-sdk':
         specifier: ^10.6.0
         version: 10.6.0
@@ -136,6 +142,19 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@conform-to/dom@1.17.1':
+    resolution: {integrity: sha512-vpwCodVVWpQ6kbrlu5F85BC99ozDxqcrhmt+YDD81bCwvt6NtiycFID3NQQGQyn+bzmpb4qlF3Ay9YcljnrNHw==}
+
+  '@conform-to/react@1.17.1':
+    resolution: {integrity: sha512-AXj6HMiG0e6mJXzVNDmeQ9FH4LbGA4HdSt+a0Yb09kEnpESkK3zCopFb8RkO8kls4XMQO05KAmaE6KDlhSzprQ==}
+    peerDependencies:
+      react: '>=18'
+
+  '@conform-to/zod@1.17.1':
+    resolution: {integrity: sha512-oFt2OdCrAhNEKjjyc8QAgiykDI9s+RG9nAuxrqGyp/BFXuRPPiu0e+QIVUAxSnWtZ82swtSaf87DI+jTAyhaLg==}
+    peerDependencies:
+      zod: ^3.21.0 || ^4.0.0
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -2784,6 +2803,18 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@conform-to/dom@1.17.1': {}
+
+  '@conform-to/react@1.17.1(react@19.2.3)':
+    dependencies:
+      '@conform-to/dom': 1.17.1
+      react: 19.2.3
+
+  '@conform-to/zod@1.17.1(zod@4.3.6)':
+    dependencies:
+      '@conform-to/dom': 1.17.1
+      zod: 4.3.6
 
   '@drizzle-team/brocli@0.10.2': {}
 
