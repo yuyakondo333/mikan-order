@@ -16,6 +16,7 @@ import { eq } from "drizzle-orm";
 type CartActionResult = { success: true } | { success: false; error: string };
 
 function revalidateCartPages() {
+  revalidatePath("/", "layout");
   revalidatePath("/cart");
   revalidatePath("/confirm");
   revalidatePath("/products");
@@ -79,6 +80,10 @@ export async function updateCartItemQuantity(
 
   if (!product) {
     return { success: false, error: "商品が見つかりません" };
+  }
+
+  if (!product.isAvailable) {
+    return { success: false, error: "この商品は現在販売されていません" };
   }
 
   const required = calcStockConsumption(

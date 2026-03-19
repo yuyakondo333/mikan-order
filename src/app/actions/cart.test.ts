@@ -347,6 +347,29 @@ describe("updateCartItemQuantity", () => {
       error: "数量は1以上を指定してください",
     });
   });
+
+  // 販売停止商品の数量変更 → エラー
+  it("販売停止商品でエラーを返す", async () => {
+    setupAuthenticatedSession();
+    setupProduct({ isAvailable: false });
+
+    const result = await updateCartItemQuantity("product-1", 5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "この商品は現在販売されていません",
+    });
+  });
+
+  // 存在しない商品の数量変更 → エラー
+  it("存在しない商品でエラーを返す", async () => {
+    setupAuthenticatedSession();
+    setupNoProduct();
+
+    const result = await updateCartItemQuantity("nonexistent", 5);
+
+    expect(result).toEqual({ success: false, error: "商品が見つかりません" });
+  });
 });
 
 // =========================================
