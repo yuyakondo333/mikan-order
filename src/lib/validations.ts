@@ -70,6 +70,8 @@ export const productSchema = z.object({
   weightGrams: z.number().int().positive("重量は1以上の整数を入力してください"),
   priceJpy: z.number().int().positive("価格は1以上の整数を入力してください"),
   description: z.string().optional().default(""),
+  stock: z.number().int().min(0, "在庫数は0以上で入力してください"),
+  stockUnit: z.string().min(1, "在庫単位を入力してください").default("kg"),
   isAvailable: z.boolean().default(true),
 });
 
