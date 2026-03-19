@@ -13,6 +13,8 @@ export async function createProductAction(data: {
   weightGrams: number;
   priceJpy: number;
   description?: string | null;
+  stock?: number;
+  stockUnit?: string;
   isAvailable?: boolean;
 }) {
   try {
@@ -34,6 +36,8 @@ export async function updateProductAction(
     weightGrams: number;
     priceJpy: number;
     description: string | null;
+    stock: number;
+    stockUnit: string;
     isAvailable: boolean;
   }>
 ) {
