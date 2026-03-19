@@ -1,17 +1,16 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { Liff } from "@line/liff";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type LiffContextType = {
-  liff: Liff | null;
   isReady: boolean;
   error: string | null;
   profile: { displayName: string; pictureUrl?: string; userId: string } | null;
 };
 
 const LiffContext = createContext<LiffContextType>({
-  liff: null,
   isReady: false,
   error: null,
   profile: null,
@@ -22,35 +21,64 @@ export function useLiff() {
 }
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
-  const [liffObj, setLiffObj] = useState<Liff | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<LiffContextType["profile"]>(null);
 
   useEffect(() => {
+    if (status === "loading") return;
+
+    // セッションが既にあれば何もしない
+    if (session) {
+      setIsReady(true);
+      return;
+    }
+
+    // セッションがない → LIFF init → signIn
     async function init() {
       try {
-        const { initLiff, getLiffProfile } = await import("@/lib/liff");
+        const { initLiff } = await import("@/lib/liff");
         const liff = await initLiff();
-        setLiffObj(liff);
+        const idToken = liff.getIDToken();
 
-        const p = await getLiffProfile();
-        setProfile({
-          displayName: p.displayName,
-          pictureUrl: p.pictureUrl,
-          userId: p.userId,
+        if (!idToken) {
+          setError("LINEログインが必要です");
+          return;
+        }
+
+        const result = await signIn("line-liff", {
+          idToken,
+          redirect: false,
         });
 
-        setIsReady(true);
+        if (result?.error) {
+          setError("認証に失敗しました");
+          return;
+        }
+
+        // signIn成功 → SCを再レンダリングさせる
+        router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "LIFF の初期化に失敗しました");
+        setError(
+          e instanceof Error ? e.message : "LIFF の初期化に失敗しました"
+        );
       }
     }
     init();
-  }, []);
+  }, [session, status, router]);
+
+  // profile情報はsessionから取得（useLiff互換）
+  const profile = session?.user
+    ? {
+        displayName: session.user.displayName,
+        pictureUrl: session.user.pictureUrl,
+        userId: session.user.lineUserId,
+      }
+    : null;
 
   return (
-    <LiffContext.Provider value={{ liff: liffObj, isReady, error, profile }}>
+    <LiffContext.Provider value={{ isReady, error, profile }}>
       {children}
     </LiffContext.Provider>
   );
