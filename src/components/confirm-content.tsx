@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
-import type { CartItemType } from "@/types";
+import type { CartItemWithProduct } from "@/types";
 
 type PickupData = {
   fulfillmentMethod: "pickup";
@@ -26,61 +25,47 @@ type DeliveryData = {
 
 type FulfillmentData = PickupData | DeliveryData;
 
-export function ConfirmContent() {
+export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const [cart, setCart] = useState<CartItemType[]>([]);
   const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     try {
-      const storedCart = JSON.parse(localStorage.getItem("cart") ?? "[]");
       const storedFulfillment = sessionStorage.getItem("orderFulfillment");
-
-      if (!Array.isArray(storedCart) || storedCart.length === 0 || !storedFulfillment) {
+      if (!storedFulfillment) {
         router.replace("/cart");
         return;
       }
-
-      setCart(storedCart);
       setFulfillment(JSON.parse(storedFulfillment));
     } catch {
       router.replace("/cart");
     }
   }, [router]);
 
-  const total = cart.reduce(
+  const total = items.reduce(
     (sum, item) => sum + item.priceJpy * item.quantity,
     0
   );
 
   async function handleSubmit() {
-    if (!session?.user || !fulfillment) return;
+    if (!fulfillment) return;
     setSubmitting(true);
 
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order: fulfillment,
-          items: cart.map((item) => ({
-            id: item.id,
-            priceJpy: item.priceJpy,
-            quantity: item.quantity,
-          })),
-        }),
+        body: JSON.stringify({ order: fulfillment }),
       });
 
       if (res.ok) {
-        localStorage.removeItem("cart");
         sessionStorage.removeItem("orderFulfillment");
-        window.dispatchEvent(new Event("cart-updated"));
         const method = fulfillment.fulfillmentMethod;
         router.push(`/complete?method=${method}`);
       } else {
-        alert("注文に失敗しました");
+        const data = await res.json();
+        alert(data.error || "注文に失敗しました");
       }
     } finally {
       setSubmitting(false);
@@ -94,13 +79,12 @@ export function ConfirmContent() {
       <h1 className="mb-6 text-2xl font-bold text-orange-600">注文内容の確認</h1>
 
       <div className="space-y-4">
-        {/* 注文商品 */}
         <div className="rounded-lg bg-white p-4 shadow-sm">
           <h2 className="mb-3 font-bold text-gray-900">注文商品</h2>
           <div className="divide-y">
-            {cart.map((item) => (
+            {items.map((item) => (
               <div
-                key={item.id}
+                key={item.productId}
                 className="flex items-center justify-between py-3"
               >
                 <div>
@@ -120,15 +104,12 @@ export function ConfirmContent() {
           </div>
         </div>
 
-        {/* 受取方法 */}
         <div className="rounded-lg bg-white p-4 shadow-sm">
           <h2 className="mb-3 font-bold text-gray-900">受取方法</h2>
           {fulfillment.fulfillmentMethod === "pickup" ? (
             <div className="space-y-1 text-sm text-gray-700">
               <p className="font-medium">取り置き</p>
-              <p>
-                受取日: {formatPickupDate(fulfillment.pickupDate)}
-              </p>
+              <p>受取日: {formatPickupDate(fulfillment.pickupDate)}</p>
               <p>
                 時間帯: {TIME_SLOT_LABELS[fulfillment.pickupTimeSlot]}
               </p>
@@ -151,7 +132,6 @@ export function ConfirmContent() {
         </div>
       </div>
 
-      {/* ボタン */}
       <div className="mt-6 space-y-3">
         <button
           onClick={handleSubmit}

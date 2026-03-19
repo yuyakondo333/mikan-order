@@ -1,36 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTransition } from "react";
 import Link from "next/link";
 import { CartItem } from "@/components/cart-item";
-import type { CartItemType } from "@/types";
+import { updateCartItemQuantity, removeFromCart } from "@/app/actions/cart";
+import type { CartItemWithProduct } from "@/types";
 
-export function CartContent() {
-  const [cart, setCart] = useState<CartItemType[]>([]);
+export function CartContent({ items }: { items: CartItemWithProduct[] }) {
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("cart") ?? "[]");
-    setCart(stored);
-  }, []);
-
-  function updateCart(newCart: CartItemType[]) {
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
-    window.dispatchEvent(new Event("cart-updated"));
+  function handleUpdateQuantity(productId: string, quantity: number) {
+    startTransition(async () => {
+      await updateCartItemQuantity(productId, quantity);
+    });
   }
 
-  function handleUpdateQuantity(id: string, quantity: number) {
-    if (quantity < 1) return;
-    updateCart(
-      cart.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
+  function handleRemove(productId: string) {
+    startTransition(async () => {
+      await removeFromCart(productId);
+    });
   }
 
-  function handleRemove(id: string) {
-    updateCart(cart.filter((item) => item.id !== id));
-  }
-
-  const total = cart.reduce(
+  const total = items.reduce(
     (sum, item) => sum + item.priceJpy * item.quantity,
     0
   );
@@ -38,7 +29,7 @@ export function CartContent() {
   return (
     <div className="min-h-screen bg-orange-50 p-4">
       <h1 className="mb-6 text-2xl font-bold text-orange-600">カート</h1>
-      {cart.length === 0 ? (
+      {items.length === 0 ? (
         <div className="text-center">
           <p className="text-gray-700">カートは空です</p>
           <Link
@@ -51,10 +42,13 @@ export function CartContent() {
       ) : (
         <div>
           <div className="rounded-lg bg-white p-4 shadow-sm">
-            {cart.map((item) => (
+            {items.map((item) => (
               <CartItem
-                key={item.id}
-                {...item}
+                key={item.productId}
+                id={item.productId}
+                name={item.name}
+                priceJpy={item.priceJpy}
+                quantity={item.quantity}
                 onUpdateQuantity={handleUpdateQuantity}
                 onRemove={handleRemove}
               />
@@ -72,13 +66,17 @@ export function CartContent() {
             </div>
           </div>
           <div className="mt-4 text-center">
-            <Link
-              href="/products"
-              className="text-orange-500 underline"
-            >
+            <Link href="/products" className="text-orange-500 underline">
               買い物を続ける
             </Link>
           </div>
+          {isPending && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
+              <div className="rounded-lg bg-white px-6 py-3 shadow-lg">
+                更新中...
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

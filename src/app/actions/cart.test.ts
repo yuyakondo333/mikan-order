@@ -134,7 +134,7 @@ describe("addToCart", () => {
   it("新規商品をカートに追加できる", async () => {
     setupAuthenticatedSession();
     setupProduct();
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(1.0);
     mockUpsertCartItem.mockResolvedValue(undefined);
 
@@ -162,7 +162,7 @@ describe("addToCart", () => {
   it("在庫チェック（kg単位）: 在庫内なら成功", async () => {
     setupAuthenticatedSession();
     setupProduct({ stock: 10, stockUnit: "kg", weightGrams: 500 });
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(2.5); // 5 * 500g / 1000
     mockUpsertCartItem.mockResolvedValue(undefined);
 
@@ -176,7 +176,7 @@ describe("addToCart", () => {
   it("在庫チェック（個単位）: 在庫内なら成功", async () => {
     setupAuthenticatedSession();
     setupProduct({ stock: 10, stockUnit: "個", weightGrams: 1000 });
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(3); // qty=3, 個単位
     mockUpsertCartItem.mockResolvedValue(undefined);
 
@@ -260,7 +260,7 @@ describe("addToCart", () => {
   it("在庫ちょうどの追加は成功する（stock=10, 消費量=10）", async () => {
     setupAuthenticatedSession();
     setupProduct({ stock: 10 });
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(10); // ちょうど
     mockUpsertCartItem.mockResolvedValue(undefined);
 
@@ -273,7 +273,7 @@ describe("addToCart", () => {
   it("在庫を1超過する追加はエラー（stock=10, 消費量=11）", async () => {
     setupAuthenticatedSession();
     setupProduct({ stock: 10 });
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(11);
 
     const result = await addToCart("product-1", 22);
@@ -285,7 +285,7 @@ describe("addToCart", () => {
   it("quantity=1（最小値）で成功する", async () => {
     setupAuthenticatedSession();
     setupProduct();
-    mockGetCartItem.mockResolvedValue(null);
+    mockGetCartItem.mockResolvedValue(undefined);
     mockCalcStockConsumption.mockReturnValue(0.5);
     mockUpsertCartItem.mockResolvedValue(undefined);
 

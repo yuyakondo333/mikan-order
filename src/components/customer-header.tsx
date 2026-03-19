@@ -1,35 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { CartItemType } from "@/types";
 
-export function CustomerHeader() {
-  const [itemCount, setItemCount] = useState(0);
-
-  useEffect(() => {
-    function updateCount() {
-      const cart: CartItemType[] = JSON.parse(
-        localStorage.getItem("cart") ?? "[]"
-      );
-      setItemCount(cart.reduce((sum, item) => sum + item.quantity, 0));
-    }
-
-    updateCount();
-
-    // Listen for custom event from same tab
-    window.addEventListener("cart-updated", updateCount);
-    // Listen for storage event from other tabs
-    window.addEventListener("storage", (e) => {
-      if (e.key === "cart") updateCount();
-    });
-
-    return () => {
-      window.removeEventListener("cart-updated", updateCount);
-      window.removeEventListener("storage", updateCount);
-    };
-  }, []);
-
+export function CustomerHeader({ itemCount }: { itemCount: number }) {
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between bg-orange-500 px-4 py-3 text-white shadow-md">
       <Link href="/products" className="text-lg font-bold">
