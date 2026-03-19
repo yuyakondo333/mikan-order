@@ -1,62 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLiff } from "@/components/liff-provider";
 import { DeliveryAddressFields } from "@/components/delivery-address-fields";
 import { TIME_SLOT_OPTIONS, getPickupDateOptions } from "@/lib/constants";
 import type { AddressFormData } from "@/lib/validations";
 import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
 
-export function AddressForm() {
+type SavedAddressRow = {
+  recipientName: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  line1: string;
+  line2: string | null;
+};
+
+type Props = {
+  savedAddress: SavedAddressRow | null;
+};
+
+export function AddressForm({ savedAddress }: Props) {
   const router = useRouter();
-  const { profile } = useLiff();
   const [method, setMethod] = useState<FulfillmentMethod>("pickup");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTimeSlot, setPickupTimeSlot] = useState<PickupTimeSlot | "">("");
   const pickupDateOptions = getPickupDateOptions();
-  const [savedAddress, setSavedAddress] = useState<AddressFormData>({
-    recipientName: "",
-    postalCode: "",
-    prefecture: "",
-    city: "",
-    line1: "",
-    line2: "",
-  });
-  const [loadingAddress, setLoadingAddress] = useState(true);
 
-  useEffect(() => {
-    if (!profile?.userId) {
-      setLoadingAddress(false);
-      return;
-    }
-
-    async function fetchSavedAddress() {
-      try {
-        const res = await fetch(
-          `/api/addresses?userId=${encodeURIComponent(profile!.userId)}`
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.length > 0) {
-          const latest = data[0];
-          setSavedAddress({
-            recipientName: latest.recipientName ?? "",
-            postalCode: latest.postalCode ?? "",
-            prefecture: latest.prefecture ?? "",
-            city: latest.city ?? "",
-            line1: latest.line1 ?? "",
-            line2: latest.line2 ?? "",
-          });
-        }
-      } catch {
-        // 取得失敗時は空フォームのまま
-      } finally {
-        setLoadingAddress(false);
+  const defaultAddress: AddressFormData = savedAddress
+    ? {
+        recipientName: savedAddress.recipientName ?? "",
+        postalCode: savedAddress.postalCode ?? "",
+        prefecture: savedAddress.prefecture ?? "",
+        city: savedAddress.city ?? "",
+        line1: savedAddress.line1 ?? "",
+        line2: savedAddress.line2 ?? "",
       }
-    }
-    fetchSavedAddress();
-  }, [profile]);
+    : {
+        recipientName: "",
+        postalCode: "",
+        prefecture: "",
+        city: "",
+        line1: "",
+        line2: "",
+      };
 
   const isPickupValid = method === "pickup" && pickupDate !== "" && pickupTimeSlot !== "";
 
@@ -166,17 +153,11 @@ export function AddressForm() {
       {/* お届けフォーム */}
       {method === "delivery" && (
         <div className="rounded-lg bg-white p-4 shadow-sm">
-          {loadingAddress ? (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-300 border-t-orange-600" />
-            </div>
-          ) : (
-            <DeliveryAddressFields
-              key={JSON.stringify(savedAddress)}
-              defaultAddress={savedAddress}
-              onValidSubmit={handleDeliverySubmit}
-            />
-          )}
+          <DeliveryAddressFields
+            key={JSON.stringify(defaultAddress)}
+            defaultAddress={defaultAddress}
+            onValidSubmit={handleDeliverySubmit}
+          />
         </div>
       )}
 
