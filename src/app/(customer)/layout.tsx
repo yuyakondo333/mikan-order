@@ -1,20 +1,20 @@
-"use client";
-
-import { SessionProvider } from "next-auth/react";
-import { LiffProvider } from "@/components/liff-provider";
+import { CustomerProviders } from "@/components/customer-providers";
 import { CustomerHeader } from "@/components/customer-header";
+import { getCartItemCount } from "@/db/queries/cart";
+import { getAuthenticatedUser } from "@/lib/dal";
 
-export default function CustomerLayout({
+export default async function CustomerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getAuthenticatedUser();
+  const cartItemCount = user ? await getCartItemCount(user.id) : 0;
+
   return (
-    <SessionProvider>
-      <LiffProvider>
-        <CustomerHeader />
-        {children}
-      </LiffProvider>
-    </SessionProvider>
+    <CustomerProviders>
+      <CustomerHeader itemCount={cartItemCount} />
+      {children}
+    </CustomerProviders>
   );
 }

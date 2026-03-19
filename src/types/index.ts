@@ -13,11 +13,17 @@ export type Product = {
   updatedAt: Date | string;
 };
 
-export type CartItemType = {
+export type CartItemWithProduct = {
   id: string;
+  productId: string;
+  quantity: number;
   name: string;
   priceJpy: number;
-  quantity: number;
+  weightGrams: number;
+  stockUnit: string;
+  stock: number;
+  isAvailable: boolean;
+  updatedAt: Date | string;
 };
 
 export type FulfillmentMethod = "pickup" | "delivery";

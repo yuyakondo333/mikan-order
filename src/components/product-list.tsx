@@ -1,59 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ProductCard } from "@/components/product-card";
+import { addToCart } from "@/app/actions/cart";
 import type { Product } from "@/types";
-
-function calcStockConsumption(
-  quantity: number,
-  weightGrams: number,
-  stockUnit: string
-): number {
-  if (stockUnit === "kg") {
-    return (quantity * weightGrams) / 1000;
-  }
-  return quantity;
-}
 
 export function ProductList({ products }: { products: Product[] }) {
   const [toast, setToast] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   function handleAddToCart(productId: string, quantity: number) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
-    // 在庫チェック（カート内の既存数量も考慮）
-    const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
-    const existing = cart.find((item: { id: string }) => item.id === productId);
-    const currentQty = existing ? existing.quantity : 0;
-    const totalQty = currentQty + quantity;
-    const required = calcStockConsumption(
-      totalQty,
-      product.weightGrams,
-      product.stockUnit
-    );
+    startTransition(async () => {
+      const result = await addToCart(productId, quantity);
 
-    if (required > product.stock) {
-      setToast(`在庫が不足しています（残り${product.stock}${product.stockUnit}）`);
-      setTimeout(() => setToast(null), 3000);
-      return;
-    }
-
-    if (existing) {
-      existing.quantity = totalQty;
-    } else {
-      cart.push({
-        id: product.id,
-        name: product.name,
-        priceJpy: product.priceJpy,
-        quantity,
-      });
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cart-updated"));
-
-    setToast(`${product.name} を ${quantity}個 カートに追加しました`);
-    setTimeout(() => setToast(null), 2000);
+      if (result.success) {
+        setToast(`${product.name} を ${quantity}個 カートに追加しました`);
+        setTimeout(() => setToast(null), 2000);
+      } else {
+        setToast(result.error);
+        setTimeout(() => setToast(null), 3000);
+      }
+    });
   }
 
   return (

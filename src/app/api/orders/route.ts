@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { orders, orderItems, addresses, products } from "@/db/schema";
-import { createOrderSchema } from "@/lib/validations";
-import { getAllOrders, getOrdersByLineUserId } from "@/db/queries/orders";
+import { orders, orderItems, addresses } from "@/db/schema";
+import { fulfillmentSchema } from "@/lib/validations";
+import { getAllOrders } from "@/db/queries/orders";
 import { upsertUser } from "@/db/queries/users";
+import { getCartWithProducts, deleteAllCartItems } from "@/db/queries/cart";
 import { deductStock, calcStockConsumption } from "@/db/queries/products";
 import {
   sendOrderConfirmationWithBankTransfer,
@@ -11,11 +12,9 @@ import {
 } from "@/lib/line";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { auth } from "@/auth";
-import { inArray } from "drizzle-orm";
 
 export async function GET() {
   try {
-    // 管理画面用: 全注文一覧（管理画面はadmin_session cookieで保護済み）
     const allOrders = await getAllOrders();
     return NextResponse.json(allOrders);
   } catch (e) {
@@ -28,7 +27,6 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  // サーバーサイドでセッションからユーザー情報を取得
   const session = await auth();
   if (!session?.user?.lineUserId) {
     return NextResponse.json(
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
   const { lineUserId, displayName, pictureUrl } = session.user;
 
   const body = await request.json();
-  const parsed = createOrderSchema.safeParse(body);
+  const parsed = fulfillmentSchema.safeParse(body.order);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "入力内容に誤りがあります", details: parsed.error.flatten() },
@@ -48,54 +46,61 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { order: orderData, items } = parsed.data;
+  const orderData = parsed.data;
 
   try {
-    // 在庫チェック: 商品情報を取得して在庫を確認
-    const productIds = items.map((item) => item.id);
-    const dbProducts = await db
-      .select()
-      .from(products)
-      .where(inArray(products.id, productIds));
+    const user = await upsertUser({ lineUserId, displayName, pictureUrl });
 
-    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
-    const outOfStockItems: string[] = [];
+    // カートをDBから取得（クライアント送信のitemsは使わない）
+    const cartItems = await getCartWithProducts(user.id);
 
-    for (const item of items) {
-      const product = productMap.get(item.id);
-      if (!product) {
-        outOfStockItems.push(item.id);
-        continue;
-      }
-      const required = calcStockConsumption(
-        item.quantity,
-        product.weightGrams,
-        product.stockUnit
+    if (cartItems.length === 0) {
+      return NextResponse.json(
+        { error: "カートが空です" },
+        { status: 400 }
       );
-      if (product.stock < required) {
-        outOfStockItems.push(product.name);
-      }
     }
 
-    if (outOfStockItems.length > 0) {
+    // 販売停止商品チェック
+    const unavailableItems = cartItems.filter((item) => !item.isAvailable);
+    if (unavailableItems.length > 0) {
       return NextResponse.json(
         {
-          error: "在庫が不足しています",
-          outOfStockItems,
+          error: "販売停止中の商品が含まれています",
+          unavailableItems: unavailableItems.map((item) => item.name),
         },
         { status: 409 }
       );
     }
 
-    // 在庫を原子的に減算
-    for (const item of items) {
-      const product = productMap.get(item.id)!;
+    // 在庫チェック
+    const outOfStockItems: string[] = [];
+    for (const item of cartItems) {
       const required = calcStockConsumption(
         item.quantity,
-        product.weightGrams,
-        product.stockUnit
+        item.weightGrams,
+        item.stockUnit
       );
-      const result = await deductStock(item.id, required);
+      if (item.stock < required) {
+        outOfStockItems.push(item.name);
+      }
+    }
+
+    if (outOfStockItems.length > 0) {
+      return NextResponse.json(
+        { error: "在庫が不足しています", outOfStockItems },
+        { status: 409 }
+      );
+    }
+
+    // 在庫を原子的に減算
+    for (const item of cartItems) {
+      const required = calcStockConsumption(
+        item.quantity,
+        item.weightGrams,
+        item.stockUnit
+      );
+      const result = await deductStock(item.productId, required);
       if (result.length === 0) {
         return NextResponse.json(
           { error: "在庫が不足しています。再度お試しください。" },
@@ -104,9 +109,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const user = await upsertUser({ lineUserId, displayName, pictureUrl });
-
-    const totalJpy = items.reduce(
+    // 合計金額はDBの商品価格から計算
+    const totalJpy = cartItems.reduce(
       (sum, item) => sum + item.priceJpy * item.quantity,
       0
     );
@@ -142,14 +146,18 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // order_itemsにはDBの最新価格を記録
     await db.insert(orderItems).values(
-      items.map((item) => ({
+      cartItems.map((item) => ({
         orderId: order.id,
-        productId: item.id,
+        productId: item.productId,
         quantity: item.quantity,
         unitPriceJpy: item.priceJpy,
       }))
     );
+
+    // カートをクリア
+    await deleteAllCartItems(user.id);
 
     try {
       if (orderData.fulfillmentMethod === "delivery") {
