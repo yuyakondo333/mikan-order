@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLiff } from "@/components/liff-provider";
+import { useSession } from "next-auth/react";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { CartItemType } from "@/types";
 
@@ -28,7 +28,7 @@ type FulfillmentData = PickupData | DeliveryData;
 
 export function ConfirmContent() {
   const router = useRouter();
-  const { profile } = useLiff();
+  const { data: session } = useSession();
   const [cart, setCart] = useState<CartItemType[]>([]);
   const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -56,7 +56,7 @@ export function ConfirmContent() {
   );
 
   async function handleSubmit() {
-    if (!profile || !fulfillment) return;
+    if (!session?.user || !fulfillment) return;
     setSubmitting(true);
 
     try {
@@ -64,9 +64,6 @@ export function ConfirmContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lineUserId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl,
           order: fulfillment,
           items: cart.map((item) => ({
             id: item.id,

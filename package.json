@@ -16,6 +16,7 @@
     "@line/liff": "^2.27.3",
     "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
+    "next-auth": "5.0.0-beta.30",
     "postgres": "^3.4.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -27,10 +28,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

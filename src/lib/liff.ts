@@ -7,12 +7,4 @@ export async function initLiff() {
   return liff;
 }
 
-export function getLiffProfile() {
-  return liff.getProfile();
-}
-
-export function getLiffAccessToken() {
-  return liff.getAccessToken();
-}
-
 export { liff };

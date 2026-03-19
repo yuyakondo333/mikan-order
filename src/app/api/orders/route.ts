@@ -10,17 +10,12 @@ import {
   sendOrderConfirmationWithPickup,
 } from "@/lib/line";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
-import { eq, inArray } from "drizzle-orm";
+import { auth } from "@/auth";
+import { inArray } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const userId = request.nextUrl.searchParams.get("userId");
-
-    if (userId) {
-      const userOrders = await getOrdersByLineUserId(userId);
-      return NextResponse.json(userOrders);
-    }
-
+    // 管理画面用: 全注文一覧（管理画面はadmin_session cookieで保護済み）
     const allOrders = await getAllOrders();
     return NextResponse.json(allOrders);
   } catch (e) {
@@ -33,6 +28,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // サーバーサイドでセッションからユーザー情報を取得
+  const session = await auth();
+  if (!session?.user?.lineUserId) {
+    return NextResponse.json(
+      { error: "認証が必要です" },
+      { status: 401 }
+    );
+  }
+
+  const { lineUserId, displayName, pictureUrl } = session.user;
+
   const body = await request.json();
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) {
@@ -42,8 +48,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { lineUserId, displayName, pictureUrl, order: orderData, items } =
-    parsed.data;
+  const { order: orderData, items } = parsed.data;
 
   try {
     // 在庫チェック: 商品情報を取得して在庫を確認
