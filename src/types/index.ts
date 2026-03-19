@@ -20,6 +20,19 @@ export type CartItemType = {
   quantity: number;
 };
 
+export type CartItemWithProduct = {
+  id: string;
+  productId: string;
+  quantity: number;
+  name: string;
+  priceJpy: number;
+  weightGrams: number;
+  stockUnit: string;
+  stock: number;
+  isAvailable: boolean;
+  updatedAt: Date | string;
+};
+
 export type FulfillmentMethod = "pickup" | "delivery";
 
 export type PickupTimeSlot = "morning" | "early_afternoon" | "late_afternoon";
