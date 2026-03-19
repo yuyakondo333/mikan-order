@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { productSchema } from "@/lib/validations";
 import {
   createProductAction,
@@ -43,28 +43,36 @@ export function AdminProductsManager({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [originalStock, setOriginalStock] = useState<{
+    stock: string;
+    stockUnit: string;
+  } | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
   function openAddForm() {
     setEditingId(null);
     setForm(emptyForm);
+    setOriginalStock(null);
     setErrors({});
     setShowForm(true);
   }
 
   function openEditForm(product: Product) {
     setEditingId(product.id);
+    const stockStr = String(product.stock);
+    const stockUnitStr = product.stockUnit;
     setForm({
       name: product.name,
       variety: product.variety,
       weightGrams: String(product.weightGrams),
       priceJpy: String(product.priceJpy),
       description: product.description ?? "",
-      stock: String(product.stock),
-      stockUnit: product.stockUnit,
+      stock: stockStr,
+      stockUnit: stockUnitStr,
       isAvailable: product.isAvailable,
     });
+    setOriginalStock({ stock: stockStr, stockUnit: stockUnitStr });
     setErrors({});
     setShowForm(true);
   }
@@ -73,6 +81,7 @@ export function AdminProductsManager({
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setOriginalStock(null);
     setErrors({});
   }
 
@@ -105,10 +114,31 @@ export function AdminProductsManager({
     setSubmitting(true);
     setErrors({});
 
-    const payload = {
+    type ProductPayload = Partial<{
+      name: string;
+      variety: string;
+      weightGrams: number;
+      priceJpy: number;
+      description: string | null;
+      stock: number;
+      stockUnit: string;
+      isAvailable: boolean;
+    }>;
+    const payload: ProductPayload = {
       ...parsed.data,
       description: parsed.data.description || null,
     };
+
+    // 編集時: stock/stockUnit が変更されていなければ payload から除外
+    // （注文による在庫減算を上書きしないため）
+    if (editingId && originalStock) {
+      if (form.stock === originalStock.stock) {
+        delete payload.stock;
+      }
+      if (form.stockUnit === originalStock.stockUnit) {
+        delete payload.stockUnit;
+      }
+    }
 
     try {
       if (editingId) {
@@ -122,7 +152,7 @@ export function AdminProductsManager({
           cancelForm();
         }
       } else {
-        const result = await createProductAction(payload);
+        const result = await createProductAction(payload as Parameters<typeof createProductAction>[0]);
         if (result.success && result.product) {
           setProducts((prev) => [...prev, result.product!]);
           cancelForm();
