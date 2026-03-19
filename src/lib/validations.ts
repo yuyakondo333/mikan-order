@@ -57,9 +57,6 @@ export const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  lineUserId: z.string().min(1),
-  displayName: z.string().min(1),
-  pictureUrl: z.string().nullable().optional(),
   order: fulfillmentSchema,
   items: z.array(orderItemSchema).min(1, "カートが空です"),
 });
