@@ -1,11 +1,16 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 
-export default function CompletePage() {
-  const searchParams = useSearchParams();
-  const method = searchParams.get("method");
+export const metadata: Metadata = {
+  title: "注文完了",
+};
+
+export default async function CompletePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ method?: string }>;
+}) {
+  const { method } = await searchParams;
   const isPickup = method === "pickup";
   const isDelivery = method === "delivery";
 
