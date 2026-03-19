@@ -24,9 +24,15 @@ export async function verifyLineIdToken(
   if (!res.ok) return null;
 
   const data = await res.json();
+
+  // LINE APIレスポンスの必須フィールドを検証
+  if (typeof data.sub !== "string" || typeof data.name !== "string") {
+    return null;
+  }
+
   return {
     sub: data.sub,
     name: data.name,
-    picture: data.picture,
+    picture: typeof data.picture === "string" ? data.picture : undefined,
   };
 }

@@ -36,9 +36,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      session.user.lineUserId = token.lineUserId as string;
-      session.user.displayName = token.displayName as string;
-      session.user.pictureUrl = token.pictureUrl as string | undefined;
+      if (!token.lineUserId) return session;
+      session.user.lineUserId = token.lineUserId;
+      session.user.displayName = token.displayName ?? "";
+      session.user.pictureUrl = token.pictureUrl;
       return session;
     },
   },

@@ -13,15 +13,9 @@ import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { auth } from "@/auth";
 import { inArray } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const userId = request.nextUrl.searchParams.get("userId");
-
-    if (userId) {
-      const userOrders = await getOrdersByLineUserId(userId);
-      return NextResponse.json(userOrders);
-    }
-
+    // 管理画面用: 全注文一覧（管理画面はadmin_session cookieで保護済み）
     const allOrders = await getAllOrders();
     return NextResponse.json(allOrders);
   } catch (e) {

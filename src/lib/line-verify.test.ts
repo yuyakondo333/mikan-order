@@ -91,4 +91,17 @@ describe("verifyLineIdToken", () => {
       picture: undefined,
     });
   });
+
+  it("LINE APIが必須フィールド欠損のレスポンスを返した場合nullを返す", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ iss: "https://access.line.me" }),
+      })
+    );
+
+    const result = await verifyLineIdToken("token");
+    expect(result).toBeNull();
+  });
 });
