@@ -61,6 +61,8 @@ export const products = pgTable("products", {
   weightGrams: integer("weight_grams").notNull(),
   priceJpy: integer("price_jpy").notNull(),
   imageUrl: text("image_url"),
+  stock: integer("stock").default(0).notNull(),
+  stockUnit: text("stock_unit").default("kg").notNull(),
   isAvailable: boolean("is_available").default(true).notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -4,6 +4,17 @@ import { useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import type { Product } from "@/types";
 
+function calcStockConsumption(
+  quantity: number,
+  weightGrams: number,
+  stockUnit: string
+): number {
+  if (stockUnit === "kg") {
+    return (quantity * weightGrams) / 1000;
+  }
+  return quantity;
+}
+
 export function ProductList({ products }: { products: Product[] }) {
   const [toast, setToast] = useState<string | null>(null);
 
@@ -11,10 +22,25 @@ export function ProductList({ products }: { products: Product[] }) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
+    // 在庫チェック（カート内の既存数量も考慮）
     const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
     const existing = cart.find((item: { id: string }) => item.id === productId);
+    const currentQty = existing ? existing.quantity : 0;
+    const totalQty = currentQty + quantity;
+    const required = calcStockConsumption(
+      totalQty,
+      product.weightGrams,
+      product.stockUnit
+    );
+
+    if (required > product.stock) {
+      setToast(`在庫が不足しています（残り${product.stock}${product.stockUnit}）`);
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
     if (existing) {
-      existing.quantity += quantity;
+      existing.quantity = totalQty;
     } else {
       cart.push({
         id: product.id,

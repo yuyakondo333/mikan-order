@@ -5,6 +5,8 @@ export type Product = {
   weightGrams: number;
   priceJpy: number;
   imageUrl: string | null;
+  stock: number;
+  stockUnit: string;
   isAvailable: boolean;
   description: string | null;
   createdAt: Date | string;

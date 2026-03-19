@@ -13,6 +13,8 @@ const seedProducts = [
     weightGrams: 3000,
     priceJpy: 1500,
     description: "定番の温州みかん。小ぶりで甘みが凝縮。約30個入り。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -21,6 +23,8 @@ const seedProducts = [
     weightGrams: 5000,
     priceJpy: 2300,
     description: "定番の温州みかん。食べやすいMサイズ。約35個入り。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -29,6 +33,8 @@ const seedProducts = [
     weightGrams: 10000,
     priceJpy: 4000,
     description: "定番の温州みかん。たっぷり10kg箱。約60個入り。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -37,6 +43,8 @@ const seedProducts = [
     weightGrams: 5000,
     priceJpy: 3500,
     description: "甘みと酸味のバランスが絶妙。ヘタの部分がぷっくり膨らんだ人気品種。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -45,6 +53,8 @@ const seedProducts = [
     weightGrams: 3000,
     priceJpy: 3800,
     description: "「柑橘の大トロ」と呼ばれる高糖度品種。とろける食感。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -53,6 +63,8 @@ const seedProducts = [
     weightGrams: 5000,
     priceJpy: 3200,
     description: "プチプチとした食感が特徴。果汁たっぷりで香り豊か。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: true,
   },
   {
@@ -61,6 +73,8 @@ const seedProducts = [
     weightGrams: 3000,
     priceJpy: 4500,
     description: "ゼリーのような食感の愛媛県オリジナル品種。贈答にも最適。",
+    stock: 50,
+    stockUnit: "kg",
     isAvailable: false,
   },
 ];
@@ -70,7 +84,7 @@ async function seed() {
   const inserted = await db.insert(products).values(seedProducts).returning();
   console.log(`Inserted ${inserted.length} products:`);
   for (const p of inserted) {
-    console.log(`  - ${p.name} (${p.variety}) ¥${p.priceJpy} [${p.isAvailable ? "販売中" : "販売停止"}]`);
+    console.log(`  - ${p.name} (${p.variety}) ¥${p.priceJpy} 在庫:${p.stock}${p.stockUnit} [${p.isAvailable ? "販売中" : "販売停止"}]`);
   }
   await client.end();
   console.log("Done.");
