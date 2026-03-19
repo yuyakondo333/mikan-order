@@ -13,13 +13,6 @@ export type Product = {
   updatedAt: Date | string;
 };
 
-export type CartItemType = {
-  id: string;
-  name: string;
-  priceJpy: number;
-  quantity: number;
-};
-
 export type CartItemWithProduct = {
   id: string;
   productId: string;
