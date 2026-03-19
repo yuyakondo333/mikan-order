@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/db";
 import { cartItems, products } from "@/db/schema";
-import { eq, and, gt, sum, sql } from "drizzle-orm";
+import { eq, and, gt, sum } from "drizzle-orm";
 
 export async function getCartItem(userId: string, productId: string) {
   return db.query.cartItems.findFirst({
@@ -38,10 +38,13 @@ export async function deleteAllCartItems(userId: string) {
 
 const CART_EXPIRY_DAYS = 7;
 
-export async function getCartWithProducts(userId: string) {
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() - CART_EXPIRY_DAYS);
+function getCartExpiryDate(): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - CART_EXPIRY_DAYS);
+  return date;
+}
 
+export async function getCartWithProducts(userId: string) {
   return db
     .select({
       id: cartItems.id,
@@ -58,34 +61,23 @@ export async function getCartWithProducts(userId: string) {
     .from(cartItems)
     .innerJoin(products, eq(cartItems.productId, products.id))
     .where(
-      and(eq(cartItems.userId, userId), gt(cartItems.updatedAt, expiryDate))
+      and(
+        eq(cartItems.userId, userId),
+        gt(cartItems.updatedAt, getCartExpiryDate())
+      )
     );
 }
 
 export async function getCartItemCount(userId: string): Promise<number> {
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() - CART_EXPIRY_DAYS);
-
   const result = await db
     .select({ total: sum(cartItems.quantity) })
     .from(cartItems)
     .where(
-      and(eq(cartItems.userId, userId), gt(cartItems.updatedAt, expiryDate))
+      and(
+        eq(cartItems.userId, userId),
+        gt(cartItems.updatedAt, getCartExpiryDate())
+      )
     );
 
   return Number(result[0]?.total ?? 0);
-}
-
-export async function deleteExpiredCartItems(userId: string) {
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() - CART_EXPIRY_DAYS);
-
-  await db
-    .delete(cartItems)
-    .where(
-      and(
-        eq(cartItems.userId, userId),
-        sql`${cartItems.updatedAt} <= ${expiryDate}`
-      )
-    );
 }

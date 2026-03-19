@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { upsertUser } from "@/db/queries/users";
+import { getAuthenticatedUser } from "@/lib/dal";
 import {
   getCartItem,
   upsertCartItem,
@@ -16,16 +15,10 @@ import { eq } from "drizzle-orm";
 
 type CartActionResult = { success: true } | { success: false; error: string };
 
-async function getAuthenticatedUser() {
-  const session = await auth();
-  if (!session?.user?.lineUserId) return null;
-
-  const user = await upsertUser({
-    lineUserId: session.user.lineUserId,
-    displayName: session.user.displayName ?? "",
-    pictureUrl: session.user.pictureUrl,
-  });
-  return user;
+function revalidateCartPages() {
+  revalidatePath("/cart");
+  revalidatePath("/confirm");
+  revalidatePath("/products");
 }
 
 export async function addToCart(
@@ -65,7 +58,7 @@ export async function addToCart(
 
   await upsertCartItem(user.id, productId, newQty);
 
-  revalidatePath("/");
+  revalidateCartPages();
   return { success: true };
 }
 
@@ -99,7 +92,7 @@ export async function updateCartItemQuantity(
 
   await upsertCartItem(user.id, productId, quantity);
 
-  revalidatePath("/");
+  revalidateCartPages();
   return { success: true };
 }
 
@@ -111,7 +104,7 @@ export async function removeFromCart(
 
   await deleteCartItem(user.id, productId);
 
-  revalidatePath("/");
+  revalidateCartPages();
   return { success: true };
 }
 
@@ -121,6 +114,6 @@ export async function clearCart(): Promise<CartActionResult> {
 
   await deleteAllCartItems(user.id);
 
-  revalidatePath("/");
+  revalidateCartPages();
   return { success: true };
 }

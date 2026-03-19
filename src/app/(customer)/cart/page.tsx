@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { auth } from "@/auth";
 import { CartContent } from "@/components/cart-content";
-import { getCartWithProducts, deleteExpiredCartItems } from "@/db/queries/cart";
-import { upsertUser } from "@/db/queries/users";
+import { getCartWithProducts } from "@/db/queries/cart";
+import { getAuthenticatedUser } from "@/lib/dal";
 import type { CartItemWithProduct } from "@/types";
 
 export const metadata: Metadata = {
@@ -10,16 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CartPage() {
-  const session = await auth();
+  const user = await getAuthenticatedUser();
 
   let items: CartItemWithProduct[] = [];
-  if (session?.user?.lineUserId) {
-    const user = await upsertUser({
-      lineUserId: session.user.lineUserId,
-      displayName: session.user.displayName ?? "",
-      pictureUrl: session.user.pictureUrl,
-    });
-    await deleteExpiredCartItems(user.id);
+  if (user) {
     items = await getCartWithProducts(user.id);
   }
 

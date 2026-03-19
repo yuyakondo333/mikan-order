@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { ConfirmContent } from "@/components/confirm-content";
 import { getCartWithProducts } from "@/db/queries/cart";
-import { upsertUser } from "@/db/queries/users";
+import { getAuthenticatedUser } from "@/lib/dal";
 import type { CartItemWithProduct } from "@/types";
 
 export const metadata: Metadata = {
@@ -11,15 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ConfirmPage() {
-  const session = await auth();
+  const user = await getAuthenticatedUser();
 
   let items: CartItemWithProduct[] = [];
-  if (session?.user?.lineUserId) {
-    const user = await upsertUser({
-      lineUserId: session.user.lineUserId,
-      displayName: session.user.displayName ?? "",
-      pictureUrl: session.user.pictureUrl,
-    });
+  if (user) {
     items = await getCartWithProducts(user.id);
   }
 

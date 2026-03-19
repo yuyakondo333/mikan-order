@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { CartItemWithProduct } from "@/types";
@@ -28,7 +28,7 @@ type FulfillmentData = PickupData | DeliveryData;
 export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
   const router = useRouter();
   const [fulfillment, setFulfillment] = useState<FulfillmentData | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     try {
@@ -48,11 +48,10 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
     0
   );
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!fulfillment) return;
-    setSubmitting(true);
 
-    try {
+    startTransition(async () => {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,9 +66,7 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
         const data = await res.json();
         alert(data.error || "注文に失敗しました");
       }
-    } finally {
-      setSubmitting(false);
-    }
+    });
   }
 
   if (!fulfillment) return null;
@@ -135,14 +132,14 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
       <div className="mt-6 space-y-3">
         <button
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={isPending}
           className="w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:opacity-50"
         >
-          {submitting ? "送信中..." : "注文を確定する"}
+          {isPending ? "送信中..." : "注文を確定する"}
         </button>
         <button
           onClick={() => router.back()}
-          disabled={submitting}
+          disabled={isPending}
           className="w-full rounded-full border border-gray-300 bg-white py-3 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           戻る

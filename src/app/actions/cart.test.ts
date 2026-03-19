@@ -1,12 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // モック定義（実装ファイルより先に宣言）
-vi.mock("@/auth", () => ({
-  auth: vi.fn(),
-}));
-
-vi.mock("@/db/queries/users", () => ({
-  upsertUser: vi.fn(),
+vi.mock("@/lib/dal", () => ({
+  getAuthenticatedUser: vi.fn(),
 }));
 
 vi.mock("@/db/queries/cart", () => ({
@@ -31,8 +27,7 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-import { auth } from "@/auth";
-import { upsertUser } from "@/db/queries/users";
+import { getAuthenticatedUser } from "@/lib/dal";
 import {
   getCartItem,
   upsertCartItem,
@@ -48,8 +43,7 @@ import {
   clearCart,
 } from "@/app/actions/cart";
 
-const mockAuth = vi.mocked(auth);
-const mockUpsertUser = vi.mocked(upsertUser);
+const mockGetAuthenticatedUser = vi.mocked(getAuthenticatedUser);
 const mockGetCartItem = vi.mocked(getCartItem);
 const mockUpsertCartItem = vi.mocked(upsertCartItem);
 const mockDeleteCartItem = vi.mocked(deleteCartItem);
@@ -82,19 +76,11 @@ const mockUser = {
 
 // ヘルパー
 function setupAuthenticatedSession() {
-  mockAuth.mockResolvedValue({
-    user: {
-      lineUserId: "U1234567890",
-      displayName: "テストユーザー",
-      pictureUrl: null,
-    },
-    expires: "",
-  } as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
-  mockUpsertUser.mockResolvedValue(mockUser);
+  mockGetAuthenticatedUser.mockResolvedValue(mockUser);
 }
 
 function setupUnauthenticatedSession() {
-  mockAuth.mockResolvedValue(null as ReturnType<typeof auth> extends Promise<infer T> ? T : never);
+  mockGetAuthenticatedUser.mockResolvedValue(null);
 }
 
 function setupProduct(overrides?: Partial<typeof mockProduct>) {
