@@ -43,6 +43,13 @@
       "when": 1773918734057,
       "tag": "0005_cart-items-cascade-delete",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774017987886,
+      "tag": "0006_hesitant_romulus",
+      "breakpoints": true
     }
   ]
 }

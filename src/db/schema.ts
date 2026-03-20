@@ -149,6 +149,26 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   }),
 }));
 
+// Legal Info (single-row settings table)
+export const legalInfo = pgTable("legal_info", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sellerName: text("seller_name").notNull(),
+  representative: text("representative").notNull(),
+  address: text("address").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  priceInfo: text("price_info").notNull(),
+  shippingFee: text("shipping_fee").notNull(),
+  additionalCost: text("additional_cost").notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  paymentDeadline: text("payment_deadline").notNull(),
+  deliveryTime: text("delivery_time").notNull(),
+  returnPolicy: text("return_policy").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   user: one(users, { fields: [cartItems.userId], references: [users.id] }),
   product: one(products, {
