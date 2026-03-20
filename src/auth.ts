@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { verifyLineIdToken } from "@/lib/line-verify";
@@ -25,14 +25,15 @@ const liffProvider = Credentials({
   },
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authConfig = {
   providers: [liffProvider, Google],
-  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 },
+  session: { strategy: "jwt" as const, maxAge: 7 * 24 * 60 * 60 },
   pages: { signIn: "/products" },
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
-        return profile?.email === process.env.ADMIN_EMAIL;
+        const adminEmail = process.env.ADMIN_EMAIL;
+        return !!adminEmail && profile?.email === adminEmail;
       }
       return true;
     },
@@ -72,4 +73,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-});
+} satisfies NextAuthConfig;
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
