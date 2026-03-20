@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, getFormProps, getInputProps } from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod/v4";
+import { z } from "zod/v4";
 import { productSchema } from "@/lib/validations";
 import {
   createProductAction,
@@ -63,7 +66,30 @@ export function AdminProductsManager({
     id: string;
     name: string;
   } | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
   const [deleting, setDeleting] = useState(false);
+
+  const deleteConfirmSchema = z.object({
+    confirmName: z.string().refine(
+      (val) => val === deleteTarget?.name,
+      { message: "商品名が一致しません" }
+    ),
+  });
+
+  const [deleteForm, deleteFields] = useForm({
+    id: "delete-confirm",
+    shouldValidate: "onInput",
+    shouldRevalidate: "onInput",
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: deleteConfirmSchema });
+    },
+    onSubmit(event, { submission }) {
+      event.preventDefault();
+      if (submission?.status === "success") {
+        handleDelete();
+      }
+    },
+  });
 
   function openAddForm() {
     setEditingId(null);
@@ -178,6 +204,12 @@ export function AdminProductsManager({
     }
   }
 
+  function closeDeleteDialog() {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    deleteForm.reset();
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -188,7 +220,7 @@ export function AdminProductsManager({
       }
     } finally {
       setDeleting(false);
-      setDeleteTarget(null);
+      closeDeleteDialog();
     }
   }
 
@@ -430,32 +462,75 @@ export function AdminProductsManager({
           ))}
         </div>
       )}
-      {/* 削除確認モーダル */}
+      {/* 削除確認モーダル（1段目） */}
       <AlertDialog
-        open={!!deleteTarget}
+        open={!!deleteTarget && deleteStep === 1}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) closeDeleteDialog();
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>商品を削除</AlertDialogTitle>
             <AlertDialogDescription>
-              「{deleteTarget?.name}」を削除しますか？この操作は取り消せません。
+              「{deleteTarget?.name}」を削除しますか？
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
+              onClick={() => setDeleteStep(2)}
             >
-              {deleting ? "削除中..." : "削除する"}
+              削除する
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 削除確認モーダル（2段目・商品名入力による最終確認） */}
+      <AlertDialog
+        open={!!deleteTarget && deleteStep === 2}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>最終確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。確認のため、商品名「
+              <span className="font-semibold text-foreground">
+                {deleteTarget?.name}
+              </span>
+              」を入力してください。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <form {...getFormProps(deleteForm)}>
+            <input
+              {...getInputProps(deleteFields.confirmName, { type: "text" })}
+              placeholder={deleteTarget?.name}
+              className="w-full rounded border border-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+              autoFocus
+            />
+            {deleteFields.confirmName.errors && (
+              <p className="mt-1 text-xs text-red-600">
+                {deleteFields.confirmName.errors[0]}
+              </p>
+            )}
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel disabled={deleting}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="submit"
+                variant="destructive"
+                disabled={deleting || !deleteFields.confirmName.valid}
+              >
+                {deleting ? "削除中..." : "完全に削除する"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
     </div>
