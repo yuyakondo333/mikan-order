@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { products } from "./schema";
+import { products, productVariants } from "./schema";
 
 const connectionString = process.env.DATABASE_URL!;
 const client = postgres(connectionString);
@@ -8,84 +8,106 @@ const db = drizzle(client);
 
 const seedProducts = [
   {
-    name: "温州みかん S",
-    variety: "温州",
-    weightGrams: 3000,
-    priceJpy: 1500,
-    description: "定番の温州みかん。小ぶりで甘みが凝縮。約30個入り。",
-    stock: 50,
-    stockUnit: "kg",
+    name: "早生みかん",
+    stockKg: "100",
+    description: "甘みと酸味のバランスが良い早生みかん",
     isAvailable: true,
+    // 旧カラム（まだスキーマに残っている）
+    variety: "早生",
+    weightGrams: 0,
+    priceJpy: 0,
+    stock: 0,
+    stockUnit: "kg",
+    variants: [
+      { label: "3kg", weightKg: "3", priceJpy: 1800, displayOrder: 1 },
+      { label: "5kg", weightKg: "5", priceJpy: 2800, displayOrder: 2 },
+      { label: "10kg", weightKg: "10", priceJpy: 5000, displayOrder: 3 },
+      {
+        label: "5kg 贈答用",
+        weightKg: "5",
+        priceJpy: 3500,
+        isGiftOnly: true,
+        displayOrder: 4,
+      },
+    ],
   },
   {
-    name: "温州みかん M",
-    variety: "温州",
-    weightGrams: 5000,
-    priceJpy: 2300,
-    description: "定番の温州みかん。食べやすいMサイズ。約35個入り。",
-    stock: 50,
-    stockUnit: "kg",
+    name: "不知火",
+    stockKg: "50",
+    description: "デコポンの品種名。甘みが強くジューシー",
     isAvailable: true,
+    variety: "不知火",
+    weightGrams: 0,
+    priceJpy: 0,
+    stock: 0,
+    stockUnit: "kg",
+    variants: [
+      { label: "3kg", weightKg: "3", priceJpy: 2500, displayOrder: 1 },
+      { label: "5kg", weightKg: "5", priceJpy: 3800, displayOrder: 2 },
+      {
+        label: "5kg 贈答用",
+        weightKg: "5",
+        priceJpy: 4500,
+        isGiftOnly: true,
+        displayOrder: 3,
+      },
+    ],
   },
   {
-    name: "温州みかん L",
-    variety: "温州",
-    weightGrams: 10000,
-    priceJpy: 4000,
-    description: "定番の温州みかん。たっぷり10kg箱。約60個入り。",
-    stock: 50,
-    stockUnit: "kg",
+    name: "寿太郎",
+    stockKg: "30",
+    description: "濃厚な味わいの高級みかん",
     isAvailable: true,
+    variety: "寿太郎",
+    weightGrams: 0,
+    priceJpy: 0,
+    stock: 0,
+    stockUnit: "kg",
+    variants: [
+      { label: "3kg", weightKg: "3", priceJpy: 3000, displayOrder: 1 },
+      { label: "5kg", weightKg: "5", priceJpy: 4500, displayOrder: 2 },
+    ],
   },
   {
-    name: "デコポン 5kg",
-    variety: "デコポン",
-    weightGrams: 5000,
-    priceJpy: 3500,
-    description: "甘みと酸味のバランスが絶妙。ヘタの部分がぷっくり膨らんだ人気品種。",
-    stock: 50,
-    stockUnit: "kg",
-    isAvailable: true,
-  },
-  {
-    name: "せとか 3kg",
-    variety: "せとか",
-    weightGrams: 3000,
-    priceJpy: 3800,
-    description: "「柑橘の大トロ」と呼ばれる高糖度品種。とろける食感。",
-    stock: 50,
-    stockUnit: "kg",
-    isAvailable: true,
-  },
-  {
-    name: "はるみ 5kg",
-    variety: "はるみ",
-    weightGrams: 5000,
-    priceJpy: 3200,
-    description: "プチプチとした食感が特徴。果汁たっぷりで香り豊か。",
-    stock: 50,
-    stockUnit: "kg",
-    isAvailable: true,
-  },
-  {
-    name: "紅まどんな 3kg",
-    variety: "紅まどんな",
-    weightGrams: 3000,
-    priceJpy: 4500,
-    description: "ゼリーのような食感の愛媛県オリジナル品種。贈答にも最適。",
-    stock: 50,
-    stockUnit: "kg",
+    name: "青島みかん",
+    stockKg: "80",
+    description: "貯蔵熟成で甘みが増す晩生みかん",
     isAvailable: false,
+    variety: "青島",
+    weightGrams: 0,
+    priceJpy: 0,
+    stock: 0,
+    stockUnit: "kg",
+    variants: [
+      { label: "5kg", weightKg: "5", priceJpy: 2500, displayOrder: 1 },
+      { label: "10kg", weightKg: "10", priceJpy: 4500, displayOrder: 2 },
+    ],
   },
 ];
 
 async function seed() {
-  console.log("Seeding products...");
-  const inserted = await db.insert(products).values(seedProducts).returning();
-  console.log(`Inserted ${inserted.length} products:`);
-  for (const p of inserted) {
-    console.log(`  - ${p.name} (${p.variety}) ¥${p.priceJpy} 在庫:${p.stock}${p.stockUnit} [${p.isAvailable ? "販売中" : "販売停止"}]`);
+  console.log("Seeding products with variants...");
+
+  for (const { variants, ...productData } of seedProducts) {
+    const [product] = await db
+      .insert(products)
+      .values(productData)
+      .returning();
+    console.log(
+      `  Product: ${product.name} (stockKg: ${product.stockKg}) [${product.isAvailable ? "販売中" : "販売停止"}]`
+    );
+
+    for (const variant of variants) {
+      await db.insert(productVariants).values({
+        productId: product.id,
+        ...variant,
+      });
+      console.log(
+        `    Variant: ${variant.label} - ¥${variant.priceJpy}${variant.isGiftOnly ? " 🎁" : ""}`
+      );
+    }
   }
+
   await client.end();
   console.log("Done.");
 }
