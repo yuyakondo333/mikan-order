@@ -12,7 +12,7 @@ export default async function AdminOrdersPage() {
   const orders = await getAllOrders();
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">注文管理</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">注文管理</h1>
       <AdminOrdersTable initialOrders={orders} />
     </div>
   );

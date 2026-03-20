@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest*)",
+      "Bash(npx vitest run*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm add*)",
+      "Bash(pnpm dev*)",
+      "Bash(pnpm drizzle-kit*)",
+      "Bash(npx drizzle-kit*)",
+      "Bash(npx tsc*)",
+      "Bash(npx tsx*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(ls*)",
+      "Bash(cd *)",
+      "Bash(find *)",
+      "Bash(pwd*)",
+      "Bash(mkdir *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(which *)",
+      "Bash(echo *)",
+      "Bash(tree *)"
+    ]
+  }
+}

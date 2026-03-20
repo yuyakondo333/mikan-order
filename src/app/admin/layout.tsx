@@ -15,23 +15,20 @@ export default async function AdminLayout({
       {isAdmin && (
         <nav className="border-b bg-white px-6 py-3">
           <div className="flex items-center gap-6">
-            <span className="font-bold text-gray-800">管理画面</span>
+            <span className="font-bold text-gray-900">管理画面</span>
             <Link
               href="/admin/orders"
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-sm text-gray-900 hover:text-black"
             >
               注文管理
             </Link>
             <Link
               href="/admin/products"
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-sm text-gray-900 hover:text-black"
             >
               商品管理
             </Link>
-            <div className="ml-auto flex items-center gap-4">
-              <span className="text-xs text-gray-400">
-                {session?.user?.email}
-              </span>
+            <div className="ml-auto">
               <LogoutButton />
             </div>
           </div>
