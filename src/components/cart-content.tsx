@@ -3,21 +3,24 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { CartItem } from "@/components/cart-item";
-import { updateCartItemQuantity, removeFromCart } from "@/app/actions/cart";
-import type { CartItemWithProduct } from "@/types";
+import {
+  updateCartItemByVariant,
+  removeCartItemByVariant,
+} from "@/app/actions/cart";
+import type { CartItemWithVariant } from "@/types";
 
-export function CartContent({ items }: { items: CartItemWithProduct[] }) {
+export function CartContent({ items }: { items: CartItemWithVariant[] }) {
   const [isPending, startTransition] = useTransition();
 
-  function handleUpdateQuantity(productId: string, quantity: number) {
+  function handleUpdateQuantity(variantId: string, quantity: number) {
     startTransition(async () => {
-      await updateCartItemQuantity(productId, quantity);
+      await updateCartItemByVariant(variantId, quantity);
     });
   }
 
-  function handleRemove(productId: string) {
+  function handleRemove(variantId: string) {
     startTransition(async () => {
-      await removeFromCart(productId);
+      await removeCartItemByVariant(variantId);
     });
   }
 
@@ -44,9 +47,10 @@ export function CartContent({ items }: { items: CartItemWithProduct[] }) {
           <div className="rounded-lg bg-white p-4 shadow-sm">
             {items.map((item) => (
               <CartItem
-                key={item.productId}
-                id={item.productId}
-                name={item.name}
+                key={item.variantId}
+                id={item.variantId}
+                name={item.productName}
+                label={item.label}
                 priceJpy={item.priceJpy}
                 quantity={item.quantity}
                 onUpdateQuantity={handleUpdateQuantity}
