@@ -7,6 +7,7 @@ declare module "next-auth" {
       lineUserId: string;
       displayName: string;
       pictureUrl?: string;
+      role?: "admin" | "customer";
     } & DefaultSession["user"];
   }
 }
@@ -16,5 +17,7 @@ declare module "next-auth/jwt" {
     lineUserId?: string;
     displayName?: string;
     pictureUrl?: string;
+    role?: "admin" | "customer";
+    adminLoginAt?: number;
   }
 }
