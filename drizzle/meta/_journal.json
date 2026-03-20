@@ -50,6 +50,13 @@
       "when": 1774017987886,
       "tag": "0006_hesitant_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774024270726,
+      "tag": "0007_wooden_chat",
+      "breakpoints": true
     }
   ]
 }

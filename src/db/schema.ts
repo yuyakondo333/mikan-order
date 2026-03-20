@@ -8,6 +8,7 @@ import {
   date,
   pgEnum,
   unique,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -64,8 +65,27 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   stock: integer("stock").default(0).notNull(),
   stockUnit: text("stock_unit").default("kg").notNull(),
+  stockKg: numeric("stock_kg", { precision: 10, scale: 3 })
+    .default("0")
+    .notNull(),
   isAvailable: boolean("is_available").default(true).notNull(),
   description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Product Variants
+export const productVariants = pgTable("product_variants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  weightKg: numeric("weight_kg", { precision: 10, scale: 3 }).notNull(),
+  priceJpy: integer("price_jpy").notNull(),
+  isGiftOnly: boolean("is_gift_only").default(false).notNull(),
+  displayOrder: integer("display_order").default(0).notNull(),
+  isAvailable: boolean("is_available").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -81,6 +101,9 @@ export const cartItems = pgTable(
     productId: uuid("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
+    variantId: uuid("variant_id").references(() => productVariants.id, {
+      onDelete: "cascade",
+    }),
     quantity: integer("quantity").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -114,6 +137,12 @@ export const orderItems = pgTable("order_items", {
   productId: uuid("product_id")
     .notNull()
     .references(() => products.id),
+  variantId: uuid("variant_id").references(() => productVariants.id, {
+    onDelete: "set null",
+  }),
+  productName: text("product_name"),
+  label: text("label"),
+  weightKg: numeric("weight_kg", { precision: 10, scale: 3 }),
   quantity: integer("quantity").notNull(),
   unitPriceJpy: integer("unit_price_jpy").notNull(),
 });
@@ -128,6 +157,20 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const addressesRelations = relations(addresses, ({ one }) => ({
   user: one(users, { fields: [addresses.userId], references: [users.id] }),
 }));
+
+export const productsRelations = relations(products, ({ many }) => ({
+  variants: many(productVariants),
+}));
+
+export const productVariantsRelations = relations(
+  productVariants,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [productVariants.productId],
+      references: [products.id],
+    }),
+  })
+);
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, { fields: [orders.userId], references: [users.id] }),
@@ -146,6 +189,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   product: one(products, {
     fields: [orderItems.productId],
     references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [orderItems.variantId],
+    references: [productVariants.id],
   }),
 }));
 
@@ -174,5 +221,9 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   product: one(products, {
     fields: [cartItems.productId],
     references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [cartItems.variantId],
+    references: [productVariants.id],
   }),
 }));
