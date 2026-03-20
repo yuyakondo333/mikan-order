@@ -20,20 +20,26 @@ type FormData = {
   note: string;
 };
 
-const fields: { key: keyof FormData; label: string; required: boolean }[] = [
+const fields: {
+  key: keyof FormData;
+  label: string;
+  required: boolean;
+  multiline?: boolean;
+  inputType?: string;
+}[] = [
   { key: "sellerName", label: "販売業者", required: true },
   { key: "representative", label: "代表者", required: true },
-  { key: "address", label: "所在地", required: true },
+  { key: "address", label: "所在地", required: true, multiline: true },
   { key: "phone", label: "電話番号", required: true },
-  { key: "email", label: "メールアドレス", required: false },
+  { key: "email", label: "メールアドレス", required: false, inputType: "email" },
   { key: "priceInfo", label: "販売価格", required: true },
   { key: "shippingFee", label: "送料", required: true },
   { key: "additionalCost", label: "商品代金以外の必要料金", required: true },
   { key: "paymentMethod", label: "お支払い方法", required: true },
   { key: "paymentDeadline", label: "お支払い期限", required: true },
   { key: "deliveryTime", label: "商品の引渡し時期", required: true },
-  { key: "returnPolicy", label: "返品・交換について", required: true },
-  { key: "note", label: "備考", required: false },
+  { key: "returnPolicy", label: "返品・交換について", required: true, multiline: true },
+  { key: "note", label: "備考", required: false, multiline: true },
 ];
 
 function toFormData(info: LegalInfo | null): FormData {
@@ -133,9 +139,7 @@ export function LegalInfoEditor({
                 <span className="ml-1 text-red-500">*</span>
               )}
             </label>
-            {field.key === "returnPolicy" ||
-            field.key === "note" ||
-            field.key === "address" ? (
+            {field.multiline ? (
               <textarea
                 id={field.key}
                 value={form[field.key]}
@@ -148,7 +152,7 @@ export function LegalInfoEditor({
               />
             ) : (
               <input
-                type="text"
+                type={field.inputType ?? "text"}
                 id={field.key}
                 value={form[field.key]}
                 onChange={(e) =>

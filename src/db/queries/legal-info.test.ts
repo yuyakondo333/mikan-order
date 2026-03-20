@@ -8,7 +8,7 @@ const mockFrom = vi.fn(() => ({ limit: mockLimit }));
 
 const mockInsertValues = vi.fn();
 const mockInsertReturning = vi.fn();
-const mockInsert = vi.fn(() => ({
+const mockInsert = vi.fn((_table: unknown) => ({
   values: (...args: unknown[]) => {
     mockInsertValues(...args);
     return { returning: mockInsertReturning };
@@ -18,7 +18,7 @@ const mockInsert = vi.fn(() => ({
 const mockUpdateReturning = vi.fn();
 const mockUpdateWhere = vi.fn(() => ({ returning: mockUpdateReturning }));
 const mockUpdateSet = vi.fn(() => ({ where: mockUpdateWhere }));
-const mockUpdate = vi.fn(() => ({ set: mockUpdateSet }));
+const mockUpdate = vi.fn((_table: unknown) => ({ set: mockUpdateSet }));
 
 vi.mock("@/db", () => ({
   db: {
@@ -26,8 +26,8 @@ vi.mock("@/db", () => ({
       mockSelect(...args);
       return { from: mockFrom };
     },
-    insert: (...args: unknown[]) => mockInsert(...args),
-    update: (...args: unknown[]) => mockUpdate(...args),
+    insert: (arg: unknown) => mockInsert(arg),
+    update: (arg: unknown) => mockUpdate(arg),
   },
 }));
 
