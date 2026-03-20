@@ -1,13 +1,165 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getAuthenticatedUser } from "@/lib/dal";
 import { updateOrderStatus, getOrderWithUserAndItems } from "@/db/queries/orders";
-import { restoreStock, calcStockConsumption } from "@/db/queries/products";
-import { sendPickupReadyNotification } from "@/lib/line";
+import { getCartWithProducts, deleteAllCartItems } from "@/db/queries/cart";
+import {
+  restoreStock,
+  calcStockConsumption,
+  deductStock,
+} from "@/db/queries/products";
+import {
+  sendPickupReadyNotification,
+  sendOrderConfirmationWithPickup,
+  sendOrderConfirmationWithBankTransfer,
+} from "@/lib/line";
+import { fulfillmentSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { db } from "@/db";
-import { products } from "@/db/schema";
+import { orders, orderItems, addresses, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
+
+type OrderActionResult =
+  | { success: true; fulfillmentMethod: string }
+  | { success: false; error: string };
+
+export async function createOrder(
+  fulfillmentData: unknown
+): Promise<OrderActionResult> {
+  const user = await getAuthenticatedUser();
+  if (!user) return { success: false, error: "認証が必要です" };
+
+  const parsed = fulfillmentSchema.safeParse(fulfillmentData);
+  if (!parsed.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
+  }
+
+  const orderData = parsed.data;
+
+  try {
+    const cartItems = await getCartWithProducts(user.id);
+
+    if (cartItems.length === 0) {
+      return { success: false, error: "カートが空です" };
+    }
+
+    // 販売停止商品チェック
+    const unavailableItems = cartItems.filter((item) => !item.isAvailable);
+    if (unavailableItems.length > 0) {
+      return { success: false, error: "販売停止中の商品が含まれています" };
+    }
+
+    // 在庫チェック
+    for (const item of cartItems) {
+      const required = calcStockConsumption(
+        item.quantity,
+        item.weightGrams,
+        item.stockUnit
+      );
+      if (item.stock < required) {
+        return { success: false, error: "在庫が不足しています" };
+      }
+    }
+
+    // 在庫を原子的に減算
+    for (const item of cartItems) {
+      const required = calcStockConsumption(
+        item.quantity,
+        item.weightGrams,
+        item.stockUnit
+      );
+      const result = await deductStock(item.productId, required);
+      if (result.length === 0) {
+        return {
+          success: false,
+          error: "在庫が不足しています。再度お試しください。",
+        };
+      }
+    }
+
+    // 合計金額はDBの商品価格から計算
+    const totalJpy = cartItems.reduce(
+      (sum, item) => sum + item.priceJpy * item.quantity,
+      0
+    );
+
+    let addressId: string | null = null;
+    let initialStatus: "pending" | "awaiting_payment" = "pending";
+
+    if (orderData.fulfillmentMethod === "delivery") {
+      const [newAddress] = await db
+        .insert(addresses)
+        .values({ ...orderData.address, userId: user.id })
+        .returning();
+      addressId = newAddress.id;
+      initialStatus = "awaiting_payment";
+    }
+
+    const [order] = await db
+      .insert(orders)
+      .values({
+        userId: user.id,
+        fulfillmentMethod: orderData.fulfillmentMethod,
+        pickupDate:
+          orderData.fulfillmentMethod === "pickup"
+            ? orderData.pickupDate
+            : null,
+        pickupTimeSlot:
+          orderData.fulfillmentMethod === "pickup"
+            ? orderData.pickupTimeSlot
+            : null,
+        addressId,
+        status: initialStatus,
+        totalJpy,
+      })
+      .returning();
+
+    await db.insert(orderItems).values(
+      cartItems.map((item) => ({
+        orderId: order.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPriceJpy: item.priceJpy,
+      }))
+    );
+
+    // カートをクリア
+    await deleteAllCartItems(user.id);
+
+    // LINE通知（失敗しても注文は成功扱い）
+    try {
+      if (orderData.fulfillmentMethod === "delivery") {
+        await sendOrderConfirmationWithBankTransfer(
+          user.lineUserId,
+          totalJpy
+        );
+      } else if (orderData.fulfillmentMethod === "pickup") {
+        const pickupDate = formatPickupDate(orderData.pickupDate);
+        const pickupTimeSlot =
+          TIME_SLOT_LABELS[orderData.pickupTimeSlot] ??
+          orderData.pickupTimeSlot;
+        await sendOrderConfirmationWithPickup({
+          lineUserId: user.lineUserId,
+          pickupDate,
+          pickupTimeSlot,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to send LINE notification:", err);
+    }
+
+    revalidatePath("/", "layout");
+    revalidatePath("/cart");
+    revalidatePath("/confirm");
+    revalidatePath("/products");
+
+    return { success: true, fulfillmentMethod: orderData.fulfillmentMethod };
+  } catch (e) {
+    console.error("Failed to create order:", e);
+    return { success: false, error: "注文の作成に失敗しました" };
+  }
+}
 
 export async function updateOrderStatusAction(
   orderId: string,
