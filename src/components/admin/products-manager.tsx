@@ -317,7 +317,7 @@ export function AdminProductsManager({
         <h1 className="text-2xl font-bold text-gray-900">商品管理</h1>
         <button
           onClick={openAddForm}
-          className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+          className="rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600"
         >
           + 商品を追加
         </button>
@@ -334,25 +334,25 @@ export function AdminProductsManager({
               handleCreateProduct(e);
             }
           }}
-          className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow-sm"
+          className="mb-6 space-y-4 rounded-lg bg-white p-6 shadow-sm"
         >
-          <h2 className="font-bold text-gray-900">
+          <h2 className="text-lg font-bold text-gray-900">
             {editingId ? "商品を編集" : "新しい商品を追加"}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-900">
+              <label className="block text-base font-medium text-gray-900">
                 商品名 *
               </label>
               <input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded border p-2 text-gray-900"
+                className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900">
+              <label className="block text-base font-medium text-gray-900">
                 在庫 (kg)
               </label>
               <input
@@ -361,25 +361,26 @@ export function AdminProductsManager({
                 min="0"
                 value={stockKg}
                 onChange={(e) => setStockKg(e.target.value)}
-                className="mt-1 w-full rounded border p-2 text-gray-900"
+                className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-900">
+            <label className="block text-base font-medium text-gray-900">
               説明
             </label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 w-full rounded border p-2 text-gray-900"
+              className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-900">
+          <label className="flex items-center gap-2 text-base text-gray-900">
             <input
               type="checkbox"
               checked={isAvailable}
               onChange={(e) => setIsAvailable(e.target.checked)}
+              className="h-5 w-5"
             />
             公開する
           </label>
@@ -389,7 +390,7 @@ export function AdminProductsManager({
             <div className="border-t pt-4">
               <h3 className="mb-2 font-bold text-gray-900">バリエーション</h3>
               {variants.map((v, i) => (
-                <div key={i} className="mb-2 flex gap-2">
+                <div key={i} className="mb-3 flex items-center gap-3">
                   <input
                     required
                     placeholder="ラベル (3kg)"
@@ -399,7 +400,7 @@ export function AdminProductsManager({
                       newVars[i] = { ...v, label: e.target.value };
                       setVariants(newVars);
                     }}
-                    className="w-28 rounded border p-2 text-sm text-gray-900"
+                    className="w-36 rounded border p-2.5 text-base text-gray-900"
                   />
                   <input
                     required
@@ -412,7 +413,7 @@ export function AdminProductsManager({
                       newVars[i] = { ...v, weightKg: e.target.value };
                       setVariants(newVars);
                     }}
-                    className="w-24 rounded border p-2 text-sm text-gray-900"
+                    className="w-32 rounded border p-2.5 text-base text-gray-900"
                   />
                   <input
                     required
@@ -424,9 +425,9 @@ export function AdminProductsManager({
                       newVars[i] = { ...v, priceJpy: e.target.value };
                       setVariants(newVars);
                     }}
-                    className="w-24 rounded border p-2 text-sm text-gray-900"
+                    className="w-32 rounded border p-2.5 text-base text-gray-900"
                   />
-                  <label className="flex items-center gap-1 text-xs text-gray-700">
+                  <label className="flex items-center gap-2 text-base text-gray-700">
                     <input
                       type="checkbox"
                       checked={v.isGiftOnly}
@@ -435,6 +436,7 @@ export function AdminProductsManager({
                         newVars[i] = { ...v, isGiftOnly: e.target.checked };
                         setVariants(newVars);
                       }}
+                      className="h-5 w-5"
                     />
                     贈答用
                   </label>
@@ -444,7 +446,7 @@ export function AdminProductsManager({
                       onClick={() =>
                         setVariants(variants.filter((_, j) => j !== i))
                       }
-                      className="text-sm text-red-500"
+                      className="text-base text-red-600"
                     >
                       削除
                     </button>
@@ -454,7 +456,7 @@ export function AdminProductsManager({
               <button
                 type="button"
                 onClick={() => setVariants([...variants, { ...emptyVariant }])}
-                className="text-sm text-orange-600 hover:underline"
+                className="text-base text-orange-600 hover:underline"
               >
                 + バリエーション追加
               </button>
@@ -465,14 +467,14 @@ export function AdminProductsManager({
             <button
               type="submit"
               disabled={submitting}
-              className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+              className="rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600 disabled:opacity-50"
             >
               {submitting ? "保存中..." : editingId ? "更新する" : "追加する"}
             </button>
             <button
               type="button"
               onClick={resetForm}
-              className="rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-300"
+              className="rounded bg-gray-200 px-5 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-300"
             >
               キャンセル
             </button>
@@ -499,15 +501,15 @@ export function AdminProductsManager({
                       product.isAvailable
                     )
                   }
-                  className={`rounded-full px-3 py-0.5 text-xs font-bold ${
+                  className={`rounded-full px-3 py-1.5 text-sm font-bold ${
                     product.isAvailable
                       ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-600"
+                      : "bg-gray-200 text-gray-700"
                   }`}
                 >
                   {product.isAvailable ? "販売中" : "非公開"}
                 </button>
-                <span className="text-sm font-bold text-gray-500">
+                <span className="text-base font-bold text-gray-700">
                   在庫{" "}
                   {Number(product.stockKg) === 0 ? (
                     <span className="font-medium text-red-600">売り切れ</span>
@@ -517,12 +519,12 @@ export function AdminProductsManager({
                     </span>
                   )}
                 </span>
-                <span className="text-sm font-bold text-gray-500">
+                <span className="text-base font-bold text-gray-700">
                   バリエーション <span className="text-gray-900">{product.variants.length}件</span>
                 </span>
               </div>
               {product.description && (
-                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                <p className="mt-3 text-base leading-relaxed text-gray-700">
                   {product.description}
                 </p>
               )}
@@ -535,7 +537,7 @@ export function AdminProductsManager({
                       expandedProduct === product.id ? null : product.id
                     )
                   }
-                  className="text-xs text-orange-600 hover:underline"
+                  className="text-sm text-orange-600 hover:underline"
                 >
                   {expandedProduct === product.id
                     ? "バリエーションを閉じる"
@@ -545,35 +547,35 @@ export function AdminProductsManager({
                   <div className="mt-2 border-t pt-3">
                     {/* Shopify風 Saveバー */}
                     {getDirtyVariants(product.id).length > 0 && (
-                      <div className="mb-3 flex items-center justify-between rounded-lg bg-orange-50 px-4 py-2.5">
-                        <span className="text-sm font-medium text-orange-800">
+                      <div className="mb-3 flex items-center justify-between rounded-lg bg-orange-50 px-4 py-3">
+                        <span className="text-base font-medium text-orange-800">
                           未保存の変更があります
                         </span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => resetVariantEdits(product.id)}
-                            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             元に戻す
                           </button>
                           <button
                             onClick={() => handleSaveAllVariants(product.id)}
                             disabled={savingVariants}
-                            className="rounded bg-orange-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                            className="rounded bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
                           >
                             {savingVariants ? "保存中..." : "保存"}
                           </button>
                         </div>
                       </div>
                     )}
-                    <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
+                    <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-base">
                       <thead>
-                        <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-700">
-                          <th className="px-3 py-2">ラベル</th>
-                          <th className="px-3 py-2">価格</th>
-                          <th className="px-3 py-2">区分</th>
-                          <th className="px-3 py-2">状態</th>
-                          <th className="px-3 py-2" />
+                        <tr className="bg-gray-100 text-left text-base font-semibold text-gray-800">
+                          <th className="px-4 py-3">ラベル</th>
+                          <th className="px-4 py-3">価格</th>
+                          <th className="px-4 py-3">区分</th>
+                          <th className="px-4 py-3">状態</th>
+                          <th className="px-4 py-3" />
                         </tr>
                       </thead>
                       <tbody>
@@ -585,50 +587,50 @@ export function AdminProductsManager({
                           const availDirty = edit.isAvailable !== v.isAvailable;
                           return (
                             <tr key={v.id} className="border-t border-gray-200">
-                              <td className="px-3 py-2">
+                              <td className="px-4 py-3">
                                 <input
                                   value={edit.label}
                                   onChange={(e) => updateVariantField(v.id, v, "label", e.target.value)}
-                                  className={`w-full rounded border bg-transparent px-2 py-1 text-sm text-gray-900 focus:bg-white focus:outline-none ${labelDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
+                                  className={`w-full rounded border bg-transparent px-3 py-2 text-base text-gray-900 focus:bg-white focus:outline-none ${labelDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
                                 />
                               </td>
-                              <td className="px-3 py-2">
+                              <td className="px-4 py-3">
                                 <div className="flex items-center gap-1">
-                                  <span className="text-sm text-gray-400">¥</span>
+                                  <span className="text-base text-gray-700">¥</span>
                                   <input
                                     type="number"
                                     value={edit.priceJpy}
                                     onChange={(e) => updateVariantField(v.id, v, "priceJpy", e.target.value)}
-                                    className={`w-full rounded border bg-transparent px-2 py-1 text-sm text-gray-900 focus:bg-white focus:outline-none ${priceDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
+                                    className={`w-full rounded border bg-transparent px-3 py-2 text-base text-gray-900 focus:bg-white focus:outline-none ${priceDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
                                   />
                                 </div>
                               </td>
-                              <td className="px-3 py-2">
-                                <label className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 text-sm text-gray-700 ${giftDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
+                              <td className="px-4 py-3">
+                                <label className={`flex items-center gap-2 rounded px-2 py-1 text-base text-gray-800 ${giftDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
                                   <input
                                     type="checkbox"
                                     checked={edit.isGiftOnly}
                                     onChange={(e) => updateVariantField(v.id, v, "isGiftOnly", e.target.checked)}
-                                    className="accent-gray-700"
+                                    className="h-5 w-5 accent-gray-700"
                                   />
                                   贈答用
                                 </label>
                               </td>
-                              <td className="px-3 py-2">
-                                <label className={`flex items-center gap-1.5 rounded px-1.5 py-0.5 text-sm text-gray-700 ${availDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
+                              <td className="px-4 py-3">
+                                <label className={`flex items-center gap-2 rounded px-2 py-1 text-base text-gray-800 ${availDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
                                   <input
                                     type="checkbox"
                                     checked={edit.isAvailable}
                                     onChange={(e) => updateVariantField(v.id, v, "isAvailable", e.target.checked)}
-                                    className="accent-gray-700"
+                                    className="h-5 w-5 accent-gray-700"
                                   />
                                   公開
                                 </label>
                               </td>
-                              <td className="px-3 py-2 text-right">
+                              <td className="px-4 py-3 text-right">
                                 <button
                                   onClick={() => handleDeleteVariant(v.id, product.id)}
-                                  className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                                  className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                                 >
                                   削除
                                 </button>
@@ -640,7 +642,7 @@ export function AdminProductsManager({
                     </table>
                     <button
                       onClick={() => openAddVariantModal(product.id)}
-                      className="mt-2 text-xs font-medium text-orange-600 hover:underline"
+                      className="mt-3 text-sm font-medium text-orange-600 hover:underline"
                     >
                       + バリエーション追加
                     </button>
@@ -648,16 +650,16 @@ export function AdminProductsManager({
                 )}
               </div>
 
-              <div className="mt-3 flex gap-2">
+              <div className="mt-4 flex gap-3">
                 <button
                   onClick={() => openEditForm(product)}
-                  className="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-900 hover:bg-gray-50"
+                  className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
                 >
                   編集
                 </button>
                 <button
                   onClick={() => handleDeleteProduct(product.id)}
-                  className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                  className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                 >
                   削除
                 </button>
@@ -678,9 +680,9 @@ export function AdminProductsManager({
           <AlertDialogHeader>
             <AlertDialogTitle>バリエーション追加</AlertDialogTitle>
           </AlertDialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900">
+              <label className="block text-base font-medium text-gray-900">
                 ラベル *
               </label>
               <input
@@ -689,13 +691,13 @@ export function AdminProductsManager({
                 onChange={(e) =>
                   setNewVariant({ ...newVariant, label: e.target.value })
                 }
-                className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
                 autoFocus
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-900">
+                <label className="block text-base font-medium text-gray-900">
                   重量 (kg) *
                 </label>
                 <input
@@ -706,11 +708,11 @@ export function AdminProductsManager({
                   onChange={(e) =>
                     setNewVariant({ ...newVariant, weightKg: e.target.value })
                   }
-                  className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900">
+                <label className="block text-base font-medium text-gray-900">
                   価格 (円) *
                 </label>
                 <input
@@ -720,17 +722,18 @@ export function AdminProductsManager({
                   onChange={(e) =>
                     setNewVariant({ ...newVariant, priceJpy: e.target.value })
                   }
-                  className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                  className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-900">
+            <label className="flex items-center gap-2 text-base text-gray-900">
               <input
                 type="checkbox"
                 checked={newVariant.isGiftOnly}
                 onChange={(e) =>
                   setNewVariant({ ...newVariant, isGiftOnly: e.target.checked })
                 }
+                className="h-5 w-5"
               />
               贈答用
             </label>
