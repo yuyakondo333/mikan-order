@@ -26,7 +26,13 @@ const liffProvider = Credentials({
 });
 
 export const authConfig = {
-  providers: [liffProvider, Google],
+  providers: [
+    liffProvider,
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+  ],
   session: { strategy: "jwt" as const, maxAge: 7 * 24 * 60 * 60 },
   pages: { signIn: "/products" },
   callbacks: {
