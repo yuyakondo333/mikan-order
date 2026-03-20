@@ -67,6 +67,25 @@ export type Address = {
   updatedAt: Date | string;
 };
 
+export type LegalInfo = {
+  id: string;
+  sellerName: string;
+  representative: string;
+  address: string;
+  phone: string;
+  email: string | null;
+  priceInfo: string;
+  shippingFee: string;
+  additionalCost: string;
+  paymentMethod: string;
+  paymentDeadline: string;
+  deliveryTime: string;
+  returnPolicy: string;
+  note: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
 export type User = {
   id: string;
   lineUserId: string;
