@@ -449,21 +449,10 @@ export function AdminProductsManager({
           {products.map((product) => (
             <div
               key={product.id}
-              className="rounded-lg bg-white p-4 shadow-sm"
+              className="rounded-lg bg-white p-5 shadow-sm"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-700">
-                    在庫: {product.stockKg}kg / バリエーション:{" "}
-                    {product.variants.length}件
-                  </p>
-                  {product.description && (
-                    <p className="mt-1 text-sm text-gray-700">
-                      {product.description}
-                    </p>
-                  )}
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-bold text-gray-900">{product.name}</h2>
                 <button
                   onClick={() =>
                     handleToggleAvailability(
@@ -471,15 +460,33 @@ export function AdminProductsManager({
                       product.isAvailable
                     )
                   }
-                  className={`rounded px-3 py-1 text-xs font-medium ${
+                  className={`rounded-full px-3 py-0.5 text-xs font-bold ${
                     product.isAvailable
                       ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-900"
+                      : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {product.isAvailable ? "販売中" : "非公開"}
                 </button>
+                <span className="text-sm font-bold text-gray-500">
+                  在庫{" "}
+                  {Number(product.stockKg) === 0 ? (
+                    <span className="font-medium text-red-600">売り切れ</span>
+                  ) : (
+                    <span className={`font-medium ${Number(product.stockKg) <= 5 ? "text-red-600" : "text-gray-900"}`}>
+                      {product.stockKg}kg
+                    </span>
+                  )}
+                </span>
+                <span className="text-sm font-bold text-gray-500">
+                  バリエーション <span className="text-gray-900">{product.variants.length}件</span>
+                </span>
               </div>
+              {product.description && (
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                  {product.description}
+                </p>
+              )}
 
               {/* バリエーション一覧（展開/折りたたみ） */}
               <div className="mt-2">
