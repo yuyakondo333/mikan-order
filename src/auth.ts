@@ -1,6 +1,9 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { verifyLineIdToken } from "@/lib/line-verify";
+
+const ADMIN_SESSION_MAX_AGE = 8 * 60 * 60; // 8 hours in seconds
 
 const liffProvider = Credentials({
   id: "line-liff",
@@ -22,25 +25,60 @@ const liffProvider = Credentials({
   },
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [liffProvider],
-  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 },
+export const authConfig = {
+  providers: [
+    liffProvider,
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+  ],
+  session: { strategy: "jwt" as const, maxAge: 7 * 24 * 60 * 60 },
   pages: { signIn: "/products" },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async signIn({ account, profile }) {
+      if (account?.provider === "google") {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        return !!adminEmail && profile?.email === adminEmail;
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      // LINE LIFF login
+      if (user && account?.provider === "line-liff") {
         token.lineUserId = user.id;
         token.displayName = user.name ?? "";
         token.pictureUrl = user.image ?? undefined;
+        token.role = "customer";
       }
+
+      // Google admin login
+      if (user && account?.provider === "google") {
+        token.role = "admin";
+        token.adminLoginAt = Math.floor(Date.now() / 1000);
+      }
+
+      // Expire admin session after 8 hours
+      if (token.role === "admin" && token.adminLoginAt) {
+        const elapsed = Math.floor(Date.now() / 1000) - token.adminLoginAt;
+        if (elapsed > ADMIN_SESSION_MAX_AGE) {
+          token.role = undefined;
+          token.adminLoginAt = undefined;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
-      if (!token.lineUserId) return session;
-      session.user.lineUserId = token.lineUserId;
-      session.user.displayName = token.displayName ?? "";
-      session.user.pictureUrl = token.pictureUrl;
+      if (token.lineUserId) {
+        session.user.lineUserId = token.lineUserId;
+        session.user.displayName = token.displayName ?? "";
+        session.user.pictureUrl = token.pictureUrl;
+      }
+      session.user.role = token.role;
       return session;
     },
   },
-});
+} satisfies NextAuthConfig;
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

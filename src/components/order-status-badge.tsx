@@ -16,14 +16,14 @@ const statusColors: Record<string, string> = {
   preparing: "bg-purple-100 text-purple-800",
   ready: "bg-teal-100 text-teal-800",
   shipped: "bg-green-100 text-green-800",
-  completed: "bg-gray-100 text-gray-800",
+  completed: "bg-gray-100 text-gray-900",
   cancelled: "bg-red-100 text-red-800",
 };
 
 export function OrderStatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-600"}`}
+      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-900"}`}
     >
       {statusLabels[status] ?? status}
     </span>

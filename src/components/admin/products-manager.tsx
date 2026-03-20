@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, getFormProps, getInputProps } from "@conform-to/react";
+import { parseWithZod } from "@conform-to/zod/v4";
+import { z } from "zod/v4";
 import { productSchema } from "@/lib/validations";
 import {
   createProductAction,
@@ -8,6 +11,16 @@ import {
   deleteProductAction,
   toggleProductAvailabilityAction,
 } from "@/app/actions/products";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Product } from "@/types";
 
 type ProductForm = {
@@ -49,6 +62,34 @@ export function AdminProductsManager({
   } | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [deleting, setDeleting] = useState(false);
+
+  const deleteConfirmSchema = z.object({
+    confirmName: z.string().refine(
+      (val) => val === deleteTarget?.name,
+      { message: "商品名が一致しません" }
+    ),
+  });
+
+  const [deleteForm, deleteFields] = useForm({
+    id: "delete-confirm",
+    shouldValidate: "onInput",
+    shouldRevalidate: "onInput",
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: deleteConfirmSchema });
+    },
+    onSubmit(event, { submission }) {
+      event.preventDefault();
+      if (submission?.status === "success") {
+        handleDelete();
+      }
+    },
+  });
 
   function openAddForm() {
     setEditingId(null);
@@ -163,11 +204,23 @@ export function AdminProductsManager({
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("この商品を削除しますか？")) return;
-    const result = await deleteProductAction(id);
-    if (result.success) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+  function closeDeleteDialog() {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    deleteForm.reset();
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const result = await deleteProductAction(deleteTarget.id);
+      if (result.success) {
+        setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      }
+    } finally {
+      setDeleting(false);
+      closeDeleteDialog();
     }
   }
 
@@ -185,7 +238,7 @@ export function AdminProductsManager({
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">商品管理</h1>
+        <h1 className="text-2xl font-bold text-gray-900">商品管理</h1>
         <button
           onClick={openAddForm}
           className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
@@ -200,40 +253,40 @@ export function AdminProductsManager({
           onSubmit={handleSubmit}
           className="mb-6 space-y-3 rounded-lg bg-white p-4 shadow-sm"
         >
-          <h2 className="font-bold">
+          <h2 className="font-bold text-gray-900">
             {editingId ? "商品を編集" : "新しい商品を追加"}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 商品名 *
               </label>
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className={`mt-1 w-full rounded border p-2 ${errors.name ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.name ? "border-red-500" : ""}`}
               />
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 品種 *
               </label>
               <input
                 required
                 value={form.variety}
                 onChange={(e) => setForm({ ...form, variety: e.target.value })}
-                className={`mt-1 w-full rounded border p-2 ${errors.variety ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.variety ? "border-red-500" : ""}`}
               />
               {errors.variety && (
                 <p className="mt-1 text-sm text-red-600">{errors.variety}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 重量 (g) *
               </label>
               <input
@@ -244,7 +297,7 @@ export function AdminProductsManager({
                 onChange={(e) =>
                   setForm({ ...form, weightGrams: e.target.value })
                 }
-                className={`mt-1 w-full rounded border p-2 ${errors.weightGrams ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.weightGrams ? "border-red-500" : ""}`}
               />
               {errors.weightGrams && (
                 <p className="mt-1 text-sm text-red-600">
@@ -253,7 +306,7 @@ export function AdminProductsManager({
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 価格 (円) *
               </label>
               <input
@@ -264,14 +317,14 @@ export function AdminProductsManager({
                 onChange={(e) =>
                   setForm({ ...form, priceJpy: e.target.value })
                 }
-                className={`mt-1 w-full rounded border p-2 ${errors.priceJpy ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.priceJpy ? "border-red-500" : ""}`}
               />
               {errors.priceJpy && (
                 <p className="mt-1 text-sm text-red-600">{errors.priceJpy}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 在庫数 *
               </label>
               <input
@@ -282,14 +335,14 @@ export function AdminProductsManager({
                 onChange={(e) =>
                   setForm({ ...form, stock: e.target.value })
                 }
-                className={`mt-1 w-full rounded border p-2 ${errors.stock ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.stock ? "border-red-500" : ""}`}
               />
               {errors.stock && (
                 <p className="mt-1 text-sm text-red-600">{errors.stock}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-900">
                 在庫単位 *
               </label>
               <select
@@ -297,7 +350,7 @@ export function AdminProductsManager({
                 onChange={(e) =>
                   setForm({ ...form, stockUnit: e.target.value })
                 }
-                className={`mt-1 w-full rounded border p-2 ${errors.stockUnit ? "border-red-500" : ""}`}
+                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.stockUnit ? "border-red-500" : ""}`}
               >
                 <option value="kg">kg</option>
                 <option value="箱">箱</option>
@@ -309,7 +362,7 @@ export function AdminProductsManager({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-900">
               説明
             </label>
             <input
@@ -317,10 +370,10 @@ export function AdminProductsManager({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              className="mt-1 w-full rounded border p-2"
+              className="mt-1 w-full rounded border p-2 text-gray-900"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-gray-900">
             <input
               type="checkbox"
               checked={form.isAvailable}
@@ -345,7 +398,7 @@ export function AdminProductsManager({
             <button
               type="button"
               onClick={cancelForm}
-              className="rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+              className="rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-300"
             >
               キャンセル
             </button>
@@ -355,7 +408,7 @@ export function AdminProductsManager({
 
       {/* 商品一覧 */}
       {products.length === 0 ? (
-        <p className="text-gray-500">商品はありません</p>
+        <p className="text-gray-900">商品はありません</p>
       ) : (
         <div className="space-y-4">
           {products.map((product) => (
@@ -365,13 +418,13 @@ export function AdminProductsManager({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="font-bold">{product.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-bold text-gray-900">{product.name}</p>
+                  <p className="text-sm text-gray-900">
                     {product.variety} / {product.weightGrams}g /
                     ¥{product.priceJpy.toLocaleString()} / 在庫: {product.stock}{product.stockUnit}
                   </p>
                   {product.description && (
-                    <p className="mt-1 text-sm text-gray-400">
+                    <p className="mt-1 text-sm text-gray-900">
                       {product.description}
                     </p>
                   )}
@@ -383,7 +436,7 @@ export function AdminProductsManager({
                   className={`rounded px-3 py-1 text-xs font-medium ${
                     product.isAvailable
                       ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-600"
+                      : "bg-gray-100 text-gray-900"
                   }`}
                 >
                   {product.isAvailable ? "販売中" : "非公開"}
@@ -397,7 +450,9 @@ export function AdminProductsManager({
                   編集
                 </button>
                 <button
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() =>
+                    setDeleteTarget({ id: product.id, name: product.name })
+                  }
                   className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
                 >
                   削除
@@ -407,6 +462,77 @@ export function AdminProductsManager({
           ))}
         </div>
       )}
+      {/* 削除確認モーダル（1段目） */}
+      <AlertDialog
+        open={!!deleteTarget && deleteStep === 1}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>商品を削除</AlertDialogTitle>
+            <AlertDialogDescription>
+              「{deleteTarget?.name}」を削除しますか？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => setDeleteStep(2)}
+            >
+              削除する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 削除確認モーダル（2段目・商品名入力による最終確認） */}
+      <AlertDialog
+        open={!!deleteTarget && deleteStep === 2}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>最終確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。確認のため、商品名「
+              <span className="font-semibold text-foreground">
+                {deleteTarget?.name}
+              </span>
+              」を入力してください。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <form {...getFormProps(deleteForm)}>
+            <input
+              {...getInputProps(deleteFields.confirmName, { type: "text" })}
+              placeholder={deleteTarget?.name}
+              className="w-full rounded border border-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+              autoFocus
+            />
+            {deleteFields.confirmName.errors && (
+              <p className="mt-1 text-xs text-red-600">
+                {deleteFields.confirmName.errors[0]}
+              </p>
+            )}
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel disabled={deleting}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="submit"
+                variant="destructive"
+                disabled={deleting || !deleteFields.confirmName.valid}
+              >
+                {deleting ? "削除中..." : "完全に削除する"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

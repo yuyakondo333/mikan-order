@@ -12,7 +12,7 @@ import {
 } from "@/lib/line";
 import { fulfillmentSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
-import { cookies } from "next/headers";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { db } from "@/db";
 import { orders, orderItems, addresses, cartItems, products } from "@/db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
@@ -172,17 +172,11 @@ export async function createOrder(
   }
 }
 
-async function verifyAdminSession(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("admin_session");
-  return !!session?.value;
-}
-
 export async function updateOrderStatusAction(
   orderId: string,
   status: string
 ) {
-  const isAdmin = await verifyAdminSession();
+  const isAdmin = await verifyAdmin();
   if (!isAdmin) {
     return { success: false, error: "管理者認証が必要です" };
   }

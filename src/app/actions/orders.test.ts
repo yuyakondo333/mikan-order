@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Session } from "next-auth";
 
 // server-only モック（テスト環境用）
 vi.mock("server-only", () => ({}));
@@ -34,19 +35,17 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("next/headers", () => {
-  const set = vi.fn();
-  const get = vi.fn();
-  return {
-    cookies: vi.fn().mockResolvedValue({ set, get }),
-  };
-});
+const { mockAuth } = vi.hoisted(() => ({
+  mockAuth: vi.fn<() => Promise<Session | null>>(),
+}));
+vi.mock("@/auth", () => ({
+  auth: mockAuth,
+}));
 
 import { getAuthenticatedUser } from "@/lib/dal";
 import { getCartWithProducts } from "@/db/queries/cart";
 import { calcStockConsumption } from "@/db/queries/products";
 import { db } from "@/db";
-import { cookies } from "next/headers";
 import { createOrder, updateOrderStatusAction } from "@/app/actions/orders";
 
 const mockGetAuthenticatedUser = vi.mocked(getAuthenticatedUser);
@@ -293,8 +292,21 @@ describe("updateOrderStatusAction", () => {
   });
 
   it("管理者セッションがない場合はエラーを返す", async () => {
-    const cookieStore = await cookies();
-    vi.mocked(cookieStore.get).mockReturnValue(undefined);
+    mockAuth.mockResolvedValue(null);
+
+    const result = await updateOrderStatusAction("order-1", "preparing");
+
+    expect(result).toEqual({
+      success: false,
+      error: "管理者認証が必要です",
+    });
+  });
+
+  it("customerロールではエラーを返す", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "customer", lineUserId: "U123", displayName: "test" },
+      expires: "",
+    } as Session);
 
     const result = await updateOrderStatusAction("order-1", "preparing");
 

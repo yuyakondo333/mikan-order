@@ -1,23 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
 
-  // Skip login page
+  const isAdmin = req.auth?.user?.role === "admin";
+
+  // Redirect logged-in admin away from login page
   if (pathname === "/admin/login") {
+    if (isAdmin) {
+      return NextResponse.redirect(new URL("/admin/orders", req.url));
+    }
     return NextResponse.next();
   }
 
   // Protect /admin/* routes
-  if (pathname.startsWith("/admin")) {
-    const session = request.cookies.get("admin_session");
-    if (!session?.value) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
-    }
+  if (pathname.startsWith("/admin") && !isAdmin) {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/admin/:path*"],

@@ -97,26 +97,22 @@ export function AdminOrdersTable({
   return (
     <div>
       {/* フィルタ・ソート */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-1">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="rounded border p-1 text-sm text-gray-900"
+        >
           {["all", ...allStatuses].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                filterStatus === s
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
+            <option key={s} value={s}>
               {statusLabels[s] ?? s}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-          className="rounded border p-1 text-sm"
+          className="rounded border p-1 text-sm text-gray-900"
         >
           <option value="newest">新しい順</option>
           <option value="oldest">古い順</option>
@@ -124,13 +120,13 @@ export function AdminOrdersTable({
       </div>
 
       {/* 件数表示 */}
-      <p className="mb-3 text-sm text-gray-500">
+      <p className="mb-3 text-sm text-gray-900">
         {filteredOrders.length}件の注文
       </p>
 
       {/* 注文一覧 */}
       {filteredOrders.length === 0 ? (
-        <p className="text-gray-500">
+        <p className="text-gray-900">
           {filterStatus === "all"
             ? "注文はありません"
             : `${statusLabels[filterStatus]}の注文はありません`}
@@ -141,14 +137,14 @@ export function AdminOrdersTable({
             <div key={order.id} className="rounded-lg bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-900">
                     {new Date(order.createdAt).toLocaleDateString("ja-JP")}
                   </p>
                   <p className="font-bold">
                     ¥{order.totalJpy.toLocaleString()}
                   </p>
                   {order.user && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-900">
                       {order.user.displayName}
                     </p>
                   )}
@@ -168,7 +164,7 @@ export function AdminOrdersTable({
               </div>
 
               {/* 受取詳細 */}
-              <div className="mt-2 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-gray-900">
                 {order.fulfillmentMethod === "pickup" ? (
                   <div className="space-y-0.5">
                     <p>
@@ -200,7 +196,7 @@ export function AdminOrdersTable({
                 <select
                   value={order.status}
                   onChange={(e) => updateStatus(order.id, e.target.value)}
-                  className="rounded border p-1 text-sm"
+                  className="rounded border p-1 text-sm text-gray-900"
                 >
                   {getStatusOptions(order.fulfillmentMethod).map((s) => (
                     <option key={s} value={s}>
