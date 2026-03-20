@@ -13,9 +13,9 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {isAdmin && (
-        <nav className="border-b bg-white px-6 py-3">
-          <div className="flex items-center gap-6">
-            <span className="font-bold text-gray-900">管理画面</span>
+        <nav className="border-b bg-white px-6 py-4">
+          <div className="flex items-center gap-8">
+            <span className="text-lg font-bold text-gray-900">管理画面</span>
             <AdminNavLink href="/admin/orders">注文管理</AdminNavLink>
             <AdminNavLink href="/admin/products">商品管理</AdminNavLink>
             <AdminNavLink href="/admin/legal">特商法表記</AdminNavLink>

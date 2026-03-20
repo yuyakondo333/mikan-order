@@ -111,13 +111,13 @@ export function LegalInfoEditor({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-xl font-bold text-gray-900">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">
         特定商取引法に基づく表記
       </h1>
 
       {message && (
         <div
-          className={`mb-4 rounded p-3 text-sm ${
+          className={`mb-4 rounded p-3 text-base ${
             message.type === "success"
               ? "bg-green-50 text-green-700"
               : "bg-red-50 text-red-700"
@@ -132,7 +132,7 @@ export function LegalInfoEditor({
           <div key={field.key}>
             <label
               htmlFor={field.key}
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-base font-medium text-gray-800"
             >
               {field.label}
               {field.required && (
@@ -147,7 +147,7 @@ export function LegalInfoEditor({
                   setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                 }
                 rows={3}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none"
                 required={field.required}
               />
             ) : (
@@ -158,7 +158,7 @@ export function LegalInfoEditor({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                 }
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none"
                 required={field.required}
               />
             )}
@@ -168,7 +168,7 @@ export function LegalInfoEditor({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-6 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "保存中..." : "保存"}
         </button>

@@ -16,10 +16,10 @@ export function AdminNavLink({
   return (
     <Link
       href={href}
-      className={`text-sm font-medium ${
+      className={`text-base font-medium ${
         isActive
           ? "text-orange-600 underline underline-offset-4"
-          : "text-gray-500 hover:text-gray-900"
+          : "text-gray-700 hover:text-gray-900"
       }`}
     >
       {children}
