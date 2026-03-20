@@ -26,6 +26,44 @@ export type CartItemWithProduct = {
   updatedAt: Date | string;
 };
 
+export type ProductVariant = {
+  id: string;
+  productId: string;
+  label: string;
+  weightKg: string;
+  priceJpy: number;
+  isGiftOnly: boolean;
+  displayOrder: number;
+  isAvailable: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+export type ProductWithVariants = Omit<
+  Product,
+  "variety" | "weightGrams" | "priceJpy" | "stock" | "stockUnit"
+> & {
+  stockKg: string;
+  variants: ProductVariant[];
+};
+
+export type CartItemWithVariant = {
+  id: string;
+  variantId: string;
+  productId: string;
+  quantity: number;
+  productName: string;
+  productImageUrl: string | null;
+  productIsAvailable: boolean;
+  stockKg: string;
+  label: string;
+  weightKg: string;
+  priceJpy: number;
+  variantIsAvailable: boolean;
+  isGiftOnly: boolean;
+  updatedAt: Date | string;
+};
+
 export type FulfillmentMethod = "pickup" | "delivery";
 
 export type PickupTimeSlot = "morning" | "early_afternoon" | "late_afternoon";
