@@ -1,8 +1,9 @@
 import "server-only";
 
 import { db } from "@/db";
-import { cartItems, products } from "@/db/schema";
+import { cartItems, products, productVariants } from "@/db/schema";
 import { eq, and, gt, sum } from "drizzle-orm";
+import type { CartItemWithVariant } from "@/types";
 
 export async function getCartItem(userId: string, productId: string) {
   return db.query.cartItems.findFirst({
@@ -66,6 +67,83 @@ export async function getCartWithProducts(userId: string) {
         gt(cartItems.updatedAt, getCartExpiryDate())
       )
     );
+}
+
+// --- Variant-aware functions (新スキーマ対応) ---
+
+export async function getCartItemByVariant(
+  userId: string,
+  variantId: string
+) {
+  return db.query.cartItems.findFirst({
+    where: and(
+      eq(cartItems.userId, userId),
+      eq(cartItems.variantId, variantId)
+    ),
+  });
+}
+
+export async function upsertCartItemByVariant(
+  userId: string,
+  variantId: string,
+  productId: string,
+  quantity: number
+) {
+  await db
+    .insert(cartItems)
+    .values({
+      userId,
+      variantId,
+      productId,
+      quantity,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [cartItems.userId, cartItems.productId],
+      set: { variantId, quantity, updatedAt: new Date() },
+    });
+}
+
+export async function deleteCartItemByVariant(
+  userId: string,
+  variantId: string
+) {
+  await db
+    .delete(cartItems)
+    .where(
+      and(eq(cartItems.userId, userId), eq(cartItems.variantId, variantId))
+    );
+}
+
+export async function getCartWithVariants(
+  userId: string
+): Promise<CartItemWithVariant[]> {
+  return db
+    .select({
+      id: cartItems.id,
+      variantId: cartItems.variantId,
+      productId: cartItems.productId,
+      quantity: cartItems.quantity,
+      productName: products.name,
+      productImageUrl: products.imageUrl,
+      productIsAvailable: products.isAvailable,
+      stockKg: products.stockKg,
+      label: productVariants.label,
+      weightKg: productVariants.weightKg,
+      priceJpy: productVariants.priceJpy,
+      variantIsAvailable: productVariants.isAvailable,
+      isGiftOnly: productVariants.isGiftOnly,
+      updatedAt: cartItems.updatedAt,
+    })
+    .from(cartItems)
+    .innerJoin(products, eq(cartItems.productId, products.id))
+    .innerJoin(productVariants, eq(cartItems.variantId, productVariants.id))
+    .where(
+      and(
+        eq(cartItems.userId, userId),
+        gt(cartItems.updatedAt, getCartExpiryDate())
+      )
+    ) as unknown as Promise<CartItemWithVariant[]>;
 }
 
 export async function getCartItemCount(userId: string): Promise<number> {
