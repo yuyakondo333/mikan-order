@@ -72,6 +72,37 @@ export const productSchema = z.object({
   isAvailable: z.boolean().default(true),
 });
 
+// --- Product Variants ---
+
+export const variantSchema = z.object({
+  label: z.string().min(1, "ラベルを入力してください"),
+  weightKg: z.number().positive("重量は0より大きい値を入力してください"),
+  priceJpy: z.number().int("価格は整数を入力してください").positive("価格は1以上の整数を入力してください"),
+  isGiftOnly: z.boolean().default(false),
+  displayOrder: z.number().int().min(0).default(0),
+  isAvailable: z.boolean().default(true),
+});
+
+export const newProductSchema = z.object({
+  name: z.string().min(1, "商品名を入力してください"),
+  stockKg: z.number().min(0, "在庫は0以上で入力してください"),
+  description: z.string().optional().default(""),
+  isAvailable: z.boolean().default(true),
+});
+
+export const productWithVariantsSchema = z.object({
+  product: newProductSchema,
+  variants: z
+    .array(variantSchema)
+    .min(1, "最低1つのバリエーションが必要です"),
+});
+
+export type VariantFormData = z.infer<typeof variantSchema>;
+export type NewProductFormData = z.infer<typeof newProductSchema>;
+export type ProductWithVariantsFormData = z.infer<
+  typeof productWithVariantsSchema
+>;
+
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
