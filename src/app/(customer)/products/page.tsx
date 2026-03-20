@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAvailableProducts } from "@/db/queries/products";
+import { getAvailableProductsWithVariants } from "@/db/queries/products";
 import { ProductList } from "@/components/product-list";
 
 export const metadata: Metadata = {
@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
-  const products = await getAvailableProducts();
+  const products = await getAvailableProductsWithVariants();
 
   return (
     <div className="min-h-screen bg-orange-50 p-4">

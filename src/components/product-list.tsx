@@ -2,22 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { ProductCard } from "@/components/product-card";
-import { addToCart } from "@/app/actions/cart";
-import type { Product } from "@/types";
+import { addToCartByVariant } from "@/app/actions/cart";
+import type { ProductWithVariants } from "@/types";
 
-export function ProductList({ products }: { products: Product[] }) {
+export function ProductList({ products }: { products: ProductWithVariants[] }) {
   const [toast, setToast] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  function handleAddToCart(productId: string, quantity: number) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-
+  function handleAddToCart(variantId: string, quantity: number, productName: string) {
     startTransition(async () => {
-      const result = await addToCart(productId, quantity);
+      const result = await addToCartByVariant(variantId, quantity);
 
       if (result.success) {
-        setToast(`${product.name} を ${quantity}個 カートに追加しました`);
+        setToast(`${productName} を ${quantity}個 カートに追加しました`);
         setTimeout(() => setToast(null), 2000);
       } else {
         setToast(result.error);
@@ -37,7 +34,7 @@ export function ProductList({ products }: { products: Product[] }) {
           {products.map((product) => (
             <ProductCard
               key={product.id}
-              {...product}
+              product={product}
               onAddToCart={handleAddToCart}
             />
           ))}

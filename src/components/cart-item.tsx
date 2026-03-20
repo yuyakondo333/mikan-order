@@ -3,6 +3,7 @@
 type CartItemProps = {
   id: string;
   name: string;
+  label: string;
   priceJpy: number;
   quantity: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
@@ -12,6 +13,7 @@ type CartItemProps = {
 export function CartItem({
   id,
   name,
+  label,
   priceJpy,
   quantity,
   onUpdateQuantity,
@@ -21,6 +23,7 @@ export function CartItem({
     <div className="flex items-center justify-between border-b py-3">
       <div>
         <p className="font-medium text-gray-900">{name}</p>
+        <p className="text-sm text-gray-500">{label}</p>
         <p className="text-sm text-gray-700">¥{priceJpy.toLocaleString()}</p>
       </div>
       <div className="flex items-center gap-2">

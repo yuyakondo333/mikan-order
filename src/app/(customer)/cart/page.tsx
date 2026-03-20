@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { CartContent } from "@/components/cart-content";
-import { getCartWithProducts } from "@/db/queries/cart";
+import { getCartWithVariants } from "@/db/queries/cart";
 import { getAuthenticatedUser } from "@/lib/dal";
-import type { CartItemWithProduct } from "@/types";
+import type { CartItemWithVariant } from "@/types";
 
 export const metadata: Metadata = {
   title: "カート",
@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 export default async function CartPage() {
   const user = await getAuthenticatedUser();
 
-  let items: CartItemWithProduct[] = [];
+  let items: CartItemWithVariant[] = [];
   if (user) {
-    items = await getCartWithProducts(user.id);
+    items = await getCartWithVariants(user.id);
   }
 
   return <CartContent items={items} />;

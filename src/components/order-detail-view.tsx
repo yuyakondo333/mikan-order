@@ -7,7 +7,8 @@ type OrderItemDetail = {
   id: string;
   productId: string;
   productName: string;
-  productVariety: string;
+  productVariety?: string;
+  label?: string | null;
   quantity: number;
   unitPriceJpy: number;
 };
@@ -66,9 +67,9 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
                   <p className="font-medium text-gray-900">
                     {item.productName}
                   </p>
-                  {item.productVariety && (
+                  {(item.label || item.productVariety) && (
                     <p className="text-sm text-gray-500">
-                      {item.productVariety}
+                      {item.label || item.productVariety}
                     </p>
                   )}
                   <p className="text-sm text-gray-500">

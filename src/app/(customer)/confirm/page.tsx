@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ConfirmContent } from "@/components/confirm-content";
-import { getCartWithProducts } from "@/db/queries/cart";
+import { getCartWithVariants } from "@/db/queries/cart";
 import { getAuthenticatedUser } from "@/lib/dal";
-import type { CartItemWithProduct } from "@/types";
+import type { CartItemWithVariant } from "@/types";
 
 export const metadata: Metadata = {
   title: "注文内容の確認",
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 export default async function ConfirmPage() {
   const user = await getAuthenticatedUser();
 
-  let items: CartItemWithProduct[] = [];
+  let items: CartItemWithVariant[] = [];
   if (user) {
-    items = await getCartWithProducts(user.id);
+    items = await getCartWithVariants(user.id);
   }
 
   if (items.length === 0) {
