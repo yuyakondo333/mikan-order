@@ -1,5 +1,6 @@
 import { CustomerProviders } from "@/components/customer-providers";
 import { CustomerHeader } from "@/components/customer-header";
+import { CustomerFooter } from "@/components/customer-footer";
 import { getCartItemCount } from "@/db/queries/cart";
 import { getAuthenticatedUser } from "@/lib/dal";
 
@@ -15,6 +16,7 @@ export default async function CustomerLayout({
     <CustomerProviders>
       <CustomerHeader itemCount={cartItemCount} />
       {children}
+      <CustomerFooter />
     </CustomerProviders>
   );
 }
