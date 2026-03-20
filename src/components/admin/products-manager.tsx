@@ -1,239 +1,189 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, getFormProps, getInputProps } from "@conform-to/react";
-import { parseWithZod } from "@conform-to/zod/v4";
-import { z } from "zod/v4";
-import { productSchema } from "@/lib/validations";
 import {
-  createProductAction,
-  updateProductAction,
+  createProductWithVariantsAction,
+  updateProductV2Action,
   deleteProductAction,
   toggleProductAvailabilityAction,
+  createVariantAction,
+  updateVariantAction,
+  deleteVariantAction,
 } from "@/app/actions/products";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import type { Product } from "@/types";
+import type { ProductWithVariants, ProductVariant } from "@/types";
 
-type ProductForm = {
-  name: string;
-  variety: string;
-  weightGrams: string;
+type VariantDraft = {
+  label: string;
+  weightKg: string;
   priceJpy: string;
-  description: string;
-  stock: string;
-  stockUnit: string;
-  isAvailable: boolean;
+  isGiftOnly: boolean;
 };
 
-const emptyForm: ProductForm = {
-  name: "",
-  variety: "",
-  weightGrams: "",
+const emptyVariant: VariantDraft = {
+  label: "",
+  weightKg: "",
   priceJpy: "",
-  description: "",
-  stock: "0",
-  stockUnit: "kg",
-  isAvailable: true,
+  isGiftOnly: false,
 };
-
-type FieldErrors = Partial<Record<string, string>>;
 
 export function AdminProductsManager({
   initialProducts,
 }: {
-  initialProducts: Product[];
+  initialProducts: ProductWithVariants[];
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [originalStock, setOriginalStock] = useState<{
-    stock: string;
-    stockUnit: string;
-  } | null>(null);
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [name, setName] = useState("");
+  const [stockKg, setStockKg] = useState("0");
+  const [description, setDescription] = useState("");
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [variants, setVariants] = useState<VariantDraft[]>([
+    { ...emptyVariant },
+  ]);
   const [submitting, setSubmitting] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
-  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
-  const [deleting, setDeleting] = useState(false);
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
-  const deleteConfirmSchema = z.object({
-    confirmName: z.string().refine(
-      (val) => val === deleteTarget?.name,
-      { message: "商品名が一致しません" }
-    ),
-  });
-
-  const [deleteFormKey, setDeleteFormKey] = useState(0);
-  const [deleteForm, deleteFields] = useForm({
-    id: `delete-confirm-${deleteFormKey}`,
-    shouldValidate: "onInput",
-    shouldRevalidate: "onInput",
-    onValidate({ formData }) {
-      return parseWithZod(formData, { schema: deleteConfirmSchema });
-    },
-    onSubmit(event, { submission }) {
-      event.preventDefault();
-      if (submission?.status === "success") {
-        handleDelete();
-      }
-    },
-  });
-
-  function openAddForm() {
-    setEditingId(null);
-    setForm(emptyForm);
-    setOriginalStock(null);
-    setErrors({});
-    setShowForm(true);
-  }
-
-  function openEditForm(product: Product) {
-    setEditingId(product.id);
-    const stockStr = String(product.stock);
-    const stockUnitStr = product.stockUnit;
-    setForm({
-      name: product.name,
-      variety: product.variety,
-      weightGrams: String(product.weightGrams),
-      priceJpy: String(product.priceJpy),
-      description: product.description ?? "",
-      stock: stockStr,
-      stockUnit: stockUnitStr,
-      isAvailable: product.isAvailable,
-    });
-    setOriginalStock({ stock: stockStr, stockUnit: stockUnitStr });
-    setErrors({});
-    setShowForm(true);
-  }
-
-  function cancelForm() {
+  function resetForm() {
     setShowForm(false);
     setEditingId(null);
-    setForm(emptyForm);
-    setOriginalStock(null);
-    setErrors({});
+    setName("");
+    setStockKg("0");
+    setDescription("");
+    setIsAvailable(true);
+    setVariants([{ ...emptyVariant }]);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function openAddForm() {
+    resetForm();
+    setShowForm(true);
+  }
+
+  async function handleCreateProduct(e: React.FormEvent) {
     e.preventDefault();
-
-    const parsed = productSchema.safeParse({
-      name: form.name,
-      variety: form.variety,
-      weightGrams: Number(form.weightGrams),
-      priceJpy: Number(form.priceJpy),
-      description: form.description || undefined,
-      stock: Number(form.stock),
-      stockUnit: form.stockUnit,
-      isAvailable: form.isAvailable,
-    });
-
-    if (!parsed.success) {
-      const fieldErrors: FieldErrors = {};
-      for (const issue of parsed.error.issues) {
-        const field = issue.path[0] as string;
-        if (!fieldErrors[field]) {
-          fieldErrors[field] = issue.message;
-        }
-      }
-      setErrors(fieldErrors);
+    if (!name.trim()) return;
+    if (variants.some((v) => !v.label.trim() || !v.weightKg || !v.priceJpy))
       return;
-    }
 
     setSubmitting(true);
-    setErrors({});
-
-    type ProductPayload = Partial<{
-      name: string;
-      variety: string;
-      weightGrams: number;
-      priceJpy: number;
-      description: string | null;
-      stock: number;
-      stockUnit: string;
-      isAvailable: boolean;
-    }>;
-    const payload: ProductPayload = {
-      ...parsed.data,
-      description: parsed.data.description || null,
-    };
-
-    // 編集時: stock/stockUnit が変更されていなければ payload から除外
-    // （注文による在庫減算を上書きしないため）
-    if (editingId && originalStock) {
-      if (form.stock === originalStock.stock) {
-        delete payload.stock;
-      }
-      if (form.stockUnit === originalStock.stockUnit) {
-        delete payload.stockUnit;
-      }
-    }
-
     try {
-      if (editingId) {
-        const result = await updateProductAction(editingId, payload);
-        if (result.success) {
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === editingId ? { ...p, ...payload } : p
-            )
-          );
-          cancelForm();
-        }
-      } else {
-        const result = await createProductAction(payload as Parameters<typeof createProductAction>[0]);
-        if (result.success && result.product) {
-          setProducts((prev) => [...prev, result.product!]);
-          cancelForm();
-        }
+      const result = await createProductWithVariantsAction(
+        {
+          name,
+          stockKg: Number(stockKg),
+          description: description || undefined,
+          isAvailable,
+        },
+        variants.map((v) => ({
+          label: v.label,
+          weightKg: v.weightKg,
+          priceJpy: Number(v.priceJpy),
+          isGiftOnly: v.isGiftOnly,
+        }))
+      );
+      if (result.success) {
+        // ページリロードでデータ取得し直し
+        window.location.reload();
       }
     } finally {
       setSubmitting(false);
     }
   }
 
-  function closeDeleteDialog() {
-    setDeleteTarget(null);
-    setDeleteStep(1);
-    setDeleteFormKey((k) => k + 1);
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
+  async function handleUpdateProduct(productId: string) {
+    setSubmitting(true);
     try {
-      const result = await deleteProductAction(deleteTarget.id);
-      if (result.success) {
-        setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-      }
+      await updateProductV2Action(productId, {
+        name,
+        stockKg,
+        description: description || null,
+        isAvailable,
+      });
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? { ...p, name, stockKg, description: description || null, isAvailable }
+            : p
+        )
+      );
+      resetForm();
     } finally {
-      setDeleting(false);
-      closeDeleteDialog();
+      setSubmitting(false);
     }
   }
 
-  async function toggleAvailability(id: string, isAvailable: boolean) {
-    const result = await toggleProductAvailabilityAction(id, !isAvailable);
+  async function handleDeleteProduct(productId: string) {
+    if (!confirm("この商品を削除しますか？")) return;
+    const result = await deleteProductAction(productId);
+    if (result.success) {
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
+  }
+
+  async function handleToggleAvailability(
+    productId: string,
+    current: boolean
+  ) {
+    const result = await toggleProductAvailabilityAction(
+      productId,
+      !current
+    );
     if (result.success) {
       setProducts((prev) =>
         prev.map((p) =>
-          p.id === id ? { ...p, isAvailable: !isAvailable } : p
+          p.id === productId ? { ...p, isAvailable: !current } : p
         )
       );
     }
+  }
+
+  async function handleAddVariant(productId: string) {
+    const label = prompt("ラベル (例: 3kg)");
+    if (!label) return;
+    const weightKg = prompt("重量 (kg)");
+    if (!weightKg) return;
+    const priceJpy = prompt("価格 (円)");
+    if (!priceJpy) return;
+
+    const result = await createVariantAction(productId, {
+      label,
+      weightKg,
+      priceJpy: Number(priceJpy),
+    });
+    if (result.success) {
+      window.location.reload();
+    }
+  }
+
+  async function handleDeleteVariant(
+    variantId: string,
+    productId: string
+  ) {
+    if (!confirm("このバリエーションを削除しますか？")) return;
+    const result = await deleteVariantAction(variantId, productId);
+    if (!result.success) {
+      alert(result.error);
+    } else {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                variants: p.variants.filter((v) => v.id !== variantId),
+              }
+            : p
+        )
+      );
+    }
+  }
+
+  function openEditForm(product: ProductWithVariants) {
+    setEditingId(product.id);
+    setName(product.name);
+    setStockKg(product.stockKg);
+    setDescription(product.description ?? "");
+    setIsAvailable(product.isAvailable);
+    setShowForm(true);
   }
 
   return (
@@ -251,8 +201,15 @@ export function AdminProductsManager({
       {/* 追加・編集フォーム */}
       {showForm && (
         <form
-          onSubmit={handleSubmit}
-          className="mb-6 space-y-3 rounded-lg bg-white p-4 shadow-sm"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (editingId) {
+              handleUpdateProduct(editingId);
+            } else {
+              handleCreateProduct(e);
+            }
+          }}
+          className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow-sm"
         >
           <h2 className="font-bold text-gray-900">
             {editingId ? "商品を編集" : "新しい商品を追加"}
@@ -264,102 +221,23 @@ export function AdminProductsManager({
               </label>
               <input
                 required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.name ? "border-red-500" : ""}`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 w-full rounded border p-2 text-gray-900"
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-900">
-                品種 *
+                在庫 (kg)
               </label>
               <input
-                required
-                value={form.variety}
-                onChange={(e) => setForm({ ...form, variety: e.target.value })}
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.variety ? "border-red-500" : ""}`}
-              />
-              {errors.variety && (
-                <p className="mt-1 text-sm text-red-600">{errors.variety}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900">
-                重量 (g) *
-              </label>
-              <input
-                required
                 type="number"
-                min="1"
-                value={form.weightGrams}
-                onChange={(e) =>
-                  setForm({ ...form, weightGrams: e.target.value })
-                }
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.weightGrams ? "border-red-500" : ""}`}
-              />
-              {errors.weightGrams && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.weightGrams}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900">
-                価格 (円) *
-              </label>
-              <input
-                required
-                type="number"
-                min="1"
-                value={form.priceJpy}
-                onChange={(e) =>
-                  setForm({ ...form, priceJpy: e.target.value })
-                }
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.priceJpy ? "border-red-500" : ""}`}
-              />
-              {errors.priceJpy && (
-                <p className="mt-1 text-sm text-red-600">{errors.priceJpy}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900">
-                在庫数 *
-              </label>
-              <input
-                required
-                type="number"
+                step="0.001"
                 min="0"
-                value={form.stock}
-                onChange={(e) =>
-                  setForm({ ...form, stock: e.target.value })
-                }
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.stock ? "border-red-500" : ""}`}
+                value={stockKg}
+                onChange={(e) => setStockKg(e.target.value)}
+                className="mt-1 w-full rounded border p-2 text-gray-900"
               />
-              {errors.stock && (
-                <p className="mt-1 text-sm text-red-600">{errors.stock}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900">
-                在庫単位 *
-              </label>
-              <select
-                value={form.stockUnit}
-                onChange={(e) =>
-                  setForm({ ...form, stockUnit: e.target.value })
-                }
-                className={`mt-1 w-full rounded border p-2 text-gray-900 ${errors.stockUnit ? "border-red-500" : ""}`}
-              >
-                <option value="kg">kg</option>
-                <option value="箱">箱</option>
-                <option value="個">個</option>
-              </select>
-              {errors.stockUnit && (
-                <p className="mt-1 text-sm text-red-600">{errors.stockUnit}</p>
-              )}
             </div>
           </div>
           <div>
@@ -367,38 +245,108 @@ export function AdminProductsManager({
               説明
             </label>
             <input
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="mt-1 w-full rounded border p-2 text-gray-900"
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-900">
             <input
               type="checkbox"
-              checked={form.isAvailable}
-              onChange={(e) =>
-                setForm({ ...form, isAvailable: e.target.checked })
-              }
+              checked={isAvailable}
+              onChange={(e) => setIsAvailable(e.target.checked)}
             />
             公開する
           </label>
+
+          {/* バリエーション（新規作成時のみ） */}
+          {!editingId && (
+            <div className="border-t pt-4">
+              <h3 className="mb-2 font-bold text-gray-900">バリエーション</h3>
+              {variants.map((v, i) => (
+                <div key={i} className="mb-2 flex gap-2">
+                  <input
+                    required
+                    placeholder="ラベル (3kg)"
+                    value={v.label}
+                    onChange={(e) => {
+                      const newVars = [...variants];
+                      newVars[i] = { ...v, label: e.target.value };
+                      setVariants(newVars);
+                    }}
+                    className="w-28 rounded border p-2 text-sm text-gray-900"
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.001"
+                    placeholder="重量kg"
+                    value={v.weightKg}
+                    onChange={(e) => {
+                      const newVars = [...variants];
+                      newVars[i] = { ...v, weightKg: e.target.value };
+                      setVariants(newVars);
+                    }}
+                    className="w-24 rounded border p-2 text-sm text-gray-900"
+                  />
+                  <input
+                    required
+                    type="number"
+                    placeholder="価格"
+                    value={v.priceJpy}
+                    onChange={(e) => {
+                      const newVars = [...variants];
+                      newVars[i] = { ...v, priceJpy: e.target.value };
+                      setVariants(newVars);
+                    }}
+                    className="w-24 rounded border p-2 text-sm text-gray-900"
+                  />
+                  <label className="flex items-center gap-1 text-xs text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={v.isGiftOnly}
+                      onChange={(e) => {
+                        const newVars = [...variants];
+                        newVars[i] = { ...v, isGiftOnly: e.target.checked };
+                        setVariants(newVars);
+                      }}
+                    />
+                    贈答用
+                  </label>
+                  {variants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVariants(variants.filter((_, j) => j !== i))
+                      }
+                      className="text-sm text-red-500"
+                    >
+                      削除
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setVariants([...variants, { ...emptyVariant }])}
+                className="text-sm text-orange-600 hover:underline"
+              >
+                + バリエーション追加
+              </button>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={submitting}
               className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
             >
-              {submitting
-                ? "保存中..."
-                : editingId
-                  ? "更新する"
-                  : "追加する"}
+              {submitting ? "保存中..." : editingId ? "更新する" : "追加する"}
             </button>
             <button
               type="button"
-              onClick={cancelForm}
+              onClick={resetForm}
               className="rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-300"
             >
               キャンセル
@@ -420,19 +368,22 @@ export function AdminProductsManager({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="font-bold text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-900">
-                    {product.variety} / {product.weightGrams}g /
-                    ¥{product.priceJpy.toLocaleString()} / 在庫: {product.stock}{product.stockUnit}
+                  <p className="text-sm text-gray-700">
+                    在庫: {product.stockKg}kg / バリエーション:{" "}
+                    {product.variants.length}件
                   </p>
                   {product.description && (
-                    <p className="mt-1 text-sm text-gray-900">
+                    <p className="mt-1 text-sm text-gray-700">
                       {product.description}
                     </p>
                   )}
                 </div>
                 <button
                   onClick={() =>
-                    toggleAvailability(product.id, product.isAvailable)
+                    handleToggleAvailability(
+                      product.id,
+                      product.isAvailable
+                    )
                   }
                   className={`rounded px-3 py-1 text-xs font-medium ${
                     product.isAvailable
@@ -443,6 +394,54 @@ export function AdminProductsManager({
                   {product.isAvailable ? "販売中" : "非公開"}
                 </button>
               </div>
+
+              {/* バリエーション一覧（展開/折りたたみ） */}
+              <div className="mt-2">
+                <button
+                  onClick={() =>
+                    setExpandedProduct(
+                      expandedProduct === product.id ? null : product.id
+                    )
+                  }
+                  className="text-xs text-orange-600 hover:underline"
+                >
+                  {expandedProduct === product.id
+                    ? "バリエーションを閉じる"
+                    : "バリエーションを表示"}
+                </button>
+                {expandedProduct === product.id && (
+                  <div className="mt-2 space-y-1 border-t pt-2">
+                    {product.variants.map((v) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="text-gray-900">
+                          {v.label} - {v.weightKg}kg -
+                          ¥{v.priceJpy.toLocaleString()}
+                          {v.isGiftOnly && " 🎁"}
+                          {!v.isAvailable && " (非公開)"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            handleDeleteVariant(v.id, product.id)
+                          }
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => handleAddVariant(product.id)}
+                      className="text-xs text-orange-600 hover:underline"
+                    >
+                      + バリエーション追加
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => openEditForm(product)}
@@ -451,9 +450,7 @@ export function AdminProductsManager({
                   編集
                 </button>
                 <button
-                  onClick={() =>
-                    setDeleteTarget({ id: product.id, name: product.name })
-                  }
+                  onClick={() => handleDeleteProduct(product.id)}
                   className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
                 >
                   削除
@@ -463,81 +460,6 @@ export function AdminProductsManager({
           ))}
         </div>
       )}
-      {/* 削除確認モーダル（1段目） */}
-      <AlertDialog
-        open={!!deleteTarget && deleteStep === 1}
-        onOpenChange={(open) => {
-          if (!open) closeDeleteDialog();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>商品を削除</AlertDialogTitle>
-            <AlertDialogDescription>
-              「{deleteTarget?.name}」を削除しますか？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => setDeleteStep(2)}
-            >
-              削除する
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* 削除確認モーダル（2段目・商品名入力による最終確認） */}
-      <AlertDialog
-        open={!!deleteTarget && deleteStep === 2}
-        onOpenChange={(open) => {
-          if (!open) closeDeleteDialog();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>最終確認</AlertDialogTitle>
-            <AlertDialogDescription>
-              この操作は取り消せません。確認のため、商品名「
-              <span className="font-semibold text-foreground">
-                {deleteTarget?.name}
-              </span>
-              」を入力してください。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <form {...getFormProps(deleteForm)}>
-            <input
-              {...getInputProps(deleteFields.confirmName, { type: "text" })}
-              placeholder={deleteTarget?.name}
-              className="w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
-              autoFocus
-            />
-            {deleteFields.confirmName.errors && (
-              <p className="mt-1 text-xs text-red-600">
-                {deleteFields.confirmName.errors[0]}
-              </p>
-            )}
-            <AlertDialogFooter className="mt-4">
-              <AlertDialogCancel disabled={deleting}>
-                キャンセル
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="submit"
-                variant="destructive"
-                disabled={
-                  deleting ||
-                  !deleteFields.confirmName.value ||
-                  deleteFields.confirmName.value !== deleteTarget?.name
-                }
-              >
-                {deleting ? "削除中..." : "完全に削除する"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
