@@ -150,6 +150,7 @@ export async function restoreStock(id: string, amount: number) {
 
 /**
  * 在庫を原子的に減算する（stockKg版）。在庫不足の場合は空配列を返す。
+ * Drizzle の numeric カラムは string で比較する（PostgreSQL が適切にキャスト）。
  */
 export async function deductStockKg(productId: string, amountKg: number) {
   return db

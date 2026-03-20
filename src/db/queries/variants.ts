@@ -56,5 +56,5 @@ export async function countVariantsByProductId(
     .select({ count: count() })
     .from(productVariants)
     .where(eq(productVariants.productId, productId));
-  return result[0].count;
+  return result[0]?.count ?? 0;
 }
