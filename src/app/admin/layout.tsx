@@ -28,6 +28,12 @@ export default async function AdminLayout({
             >
               商品管理
             </Link>
+            <Link
+              href="/admin/legal"
+              className="text-sm text-gray-900 hover:text-black"
+            >
+              特商法表記
+            </Link>
             <div className="ml-auto">
               <LogoutButton />
             </div>
