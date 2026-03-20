@@ -6,6 +6,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/db/queries/products";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export async function createProductAction(data: {
   name: string;
@@ -17,6 +18,9 @@ export async function createProductAction(data: {
   stockUnit?: string;
   isAvailable?: boolean;
 }) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
   try {
     const product = await createProduct(data);
     revalidatePath("/admin/products");
@@ -41,6 +45,9 @@ export async function updateProductAction(
     isAvailable: boolean;
   }>
 ) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
   try {
     await updateProduct(id, data);
     revalidatePath("/admin/products");
@@ -53,6 +60,9 @@ export async function updateProductAction(
 }
 
 export async function deleteProductAction(id: string) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
   try {
     await deleteProduct(id);
     revalidatePath("/admin/products");
@@ -68,6 +78,9 @@ export async function toggleProductAvailabilityAction(
   id: string,
   isAvailable: boolean
 ) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
   try {
     await updateProduct(id, { isAvailable });
     revalidatePath("/admin/products");
