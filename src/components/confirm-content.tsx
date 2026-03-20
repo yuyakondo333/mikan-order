@@ -3,8 +3,8 @@
 import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
-import { createOrder } from "@/app/actions/orders";
-import type { CartItemWithProduct } from "@/types";
+import { createOrderByVariant } from "@/app/actions/orders";
+import type { CartItemWithVariant } from "@/types";
 
 type PickupData = {
   fulfillmentMethod: "pickup";
@@ -36,11 +36,10 @@ function getFulfillmentFromStorage(): FulfillmentData | null {
 }
 
 function subscribe() {
-  // sessionStorageは変更通知がないので空のunsubscribe
   return () => {};
 }
 
-export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
+export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
   const router = useRouter();
   const fulfillment = useSyncExternalStore(
     subscribe,
@@ -64,7 +63,7 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
     if (!fulfillment) return;
 
     startTransition(async () => {
-      const result = await createOrder(fulfillment);
+      const result = await createOrderByVariant(fulfillment);
 
       if (result.success) {
         sessionStorage.removeItem("orderFulfillment");
@@ -87,11 +86,14 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
           <div className="divide-y">
             {items.map((item) => (
               <div
-                key={item.productId}
+                key={item.variantId}
                 className="flex items-center justify-between py-3"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{item.name}</p>
+                  <p className="font-medium text-gray-900">
+                    {item.productName}
+                  </p>
+                  <p className="text-sm text-gray-500">{item.label}</p>
                   <p className="text-sm text-gray-500">数量: {item.quantity}</p>
                 </div>
                 <p className="font-medium text-orange-600">
