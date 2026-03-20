@@ -82,6 +82,32 @@ export async function getOrderDetail(id: string) {
   };
 }
 
+/**
+ * スナップショットベースの注文取得（N+1解消）。
+ * order_items の productName, label, weightKg から直接取得。
+ */
+export async function getOrderWithUserAndItemsV2(id: string) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, id),
+    with: {
+      user: true,
+      items: true,
+    },
+  });
+
+  if (!order) return null;
+
+  return {
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      productName: item.productName ?? "不明な商品",
+      label: item.label ?? "",
+      weightKg: item.weightKg ?? "0",
+    })),
+  };
+}
+
 type OrderStatus =
   | "pending"
   | "awaiting_payment"
