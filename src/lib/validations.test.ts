@@ -113,6 +113,51 @@ describe("variantSchema", () => {
 });
 
 describe("newProductSchema", () => {
+  // A1: name が空文字 → エラー
+  it("name が空文字の場合エラーになる", () => {
+    const result = newProductSchema.safeParse({
+      name: "",
+      stockKg: 10,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe(
+        "商品名を入力してください"
+      );
+    }
+  });
+
+  // A2: stockKg が負数 → エラー
+  it("stockKg が負数の場合エラーになる", () => {
+    const result = newProductSchema.safeParse({
+      name: "早生みかん",
+      stockKg: -1,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe(
+        "在庫は0以上で入力してください"
+      );
+    }
+  });
+
+  // A3: 正常値で成功
+  it("正常値で成功する", () => {
+    const result = newProductSchema.safeParse({
+      name: "早生みかん",
+      stockKg: 100,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        name: "早生みかん",
+        stockKg: 100,
+        description: "",
+        isAvailable: true,
+      });
+    }
+  });
+
   // A13: stockKg が 0.5（小数）→ 成功
   it("stockKg が 0.5（小数）の場合成功する", () => {
     const result = newProductSchema.safeParse({
