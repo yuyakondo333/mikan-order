@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const mockSelect = vi.fn();
-const mockFrom = vi.fn();
+const mockLimit = vi.fn();
+const mockFrom = vi.fn(() => ({ limit: mockLimit }));
 
 vi.mock("@/db", () => ({
   db: {
@@ -27,7 +28,7 @@ describe("getLegalInfo", () => {
   });
 
   it("データなしでnullを返す", async () => {
-    mockFrom.mockResolvedValue([]);
+    mockLimit.mockResolvedValue([]);
 
     const result = await getLegalInfo();
 
@@ -54,7 +55,7 @@ describe("getLegalInfo", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    mockFrom.mockResolvedValue([mockData]);
+    mockLimit.mockResolvedValue([mockData]);
 
     const result = await getLegalInfo();
 
@@ -64,7 +65,7 @@ describe("getLegalInfo", () => {
   it("複数行がある場合、最初の1行だけを返す", async () => {
     const first = { id: "first", sellerName: "販売者1" };
     const second = { id: "second", sellerName: "販売者2" };
-    mockFrom.mockResolvedValue([first, second]);
+    mockLimit.mockResolvedValue([first, second]);
 
     const result = await getLegalInfo();
 
@@ -90,7 +91,7 @@ describe("getLegalInfo", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    mockFrom.mockResolvedValue([mockData]);
+    mockLimit.mockResolvedValue([mockData]);
 
     const result = await getLegalInfo();
 
@@ -117,7 +118,7 @@ describe("getLegalInfo", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    mockFrom.mockResolvedValue([mockData]);
+    mockLimit.mockResolvedValue([mockData]);
 
     const result = await getLegalInfo();
 
@@ -126,7 +127,7 @@ describe("getLegalInfo", () => {
   });
 
   it("DBクエリ失敗時にエラーが伝播する", async () => {
-    mockFrom.mockRejectedValue(new Error("DB connection failed"));
+    mockLimit.mockRejectedValue(new Error("DB connection failed"));
 
     await expect(getLegalInfo()).rejects.toThrow("DB connection failed");
   });
