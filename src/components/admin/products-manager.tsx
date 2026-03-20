@@ -10,6 +10,15 @@ import {
   updateVariantAction,
   deleteVariantAction,
 } from "@/app/actions/products";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ProductWithVariants, ProductVariant } from "@/types";
 
 type VariantDraft = {
@@ -43,6 +52,9 @@ export function AdminProductsManager({
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [addVariantTarget, setAddVariantTarget] = useState<string | null>(null);
+  const [newVariant, setNewVariant] = useState<VariantDraft>({ ...emptyVariant });
+  const [addingVariant, setAddingVariant] = useState(false);
 
   function resetForm() {
     setShowForm(false);
@@ -137,21 +149,35 @@ export function AdminProductsManager({
     }
   }
 
-  async function handleAddVariant(productId: string) {
-    const label = prompt("ラベル (例: 3kg)");
-    if (!label) return;
-    const weightKg = prompt("重量 (kg)");
-    if (!weightKg) return;
-    const priceJpy = prompt("価格 (円)");
-    if (!priceJpy) return;
+  function openAddVariantModal(productId: string) {
+    setAddVariantTarget(productId);
+    setNewVariant({ ...emptyVariant });
+  }
 
-    const result = await createVariantAction(productId, {
-      label,
-      weightKg,
-      priceJpy: Number(priceJpy),
-    });
-    if (result.success) {
-      window.location.reload();
+  function closeAddVariantModal() {
+    setAddVariantTarget(null);
+    setNewVariant({ ...emptyVariant });
+  }
+
+  async function handleAddVariantSubmit() {
+    if (!addVariantTarget) return;
+    if (!newVariant.label.trim() || !newVariant.weightKg || !newVariant.priceJpy)
+      return;
+
+    setAddingVariant(true);
+    try {
+      const result = await createVariantAction(addVariantTarget, {
+        label: newVariant.label,
+        weightKg: newVariant.weightKg,
+        priceJpy: Number(newVariant.priceJpy),
+        isGiftOnly: newVariant.isGiftOnly,
+      });
+      if (result.success) {
+        window.location.reload();
+      }
+    } finally {
+      setAddingVariant(false);
+      closeAddVariantModal();
     }
   }
 
@@ -432,7 +458,7 @@ export function AdminProductsManager({
                       </div>
                     ))}
                     <button
-                      onClick={() => handleAddVariant(product.id)}
+                      onClick={() => openAddVariantModal(product.id)}
                       className="text-xs text-orange-600 hover:underline"
                     >
                       + バリエーション追加
@@ -459,6 +485,93 @@ export function AdminProductsManager({
           ))}
         </div>
       )}
+
+      {/* バリエーション追加モーダル */}
+      <AlertDialog
+        open={!!addVariantTarget}
+        onOpenChange={(open) => {
+          if (!open) closeAddVariantModal();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>バリエーション追加</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-900">
+                ラベル *
+              </label>
+              <input
+                placeholder="例: 3kg"
+                value={newVariant.label}
+                onChange={(e) =>
+                  setNewVariant({ ...newVariant, label: e.target.value })
+                }
+                className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  重量 (kg) *
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  placeholder="3"
+                  value={newVariant.weightKg}
+                  onChange={(e) =>
+                    setNewVariant({ ...newVariant, weightKg: e.target.value })
+                  }
+                  className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  価格 (円) *
+                </label>
+                <input
+                  type="number"
+                  placeholder="1800"
+                  value={newVariant.priceJpy}
+                  onChange={(e) =>
+                    setNewVariant({ ...newVariant, priceJpy: e.target.value })
+                  }
+                  className="mt-1 w-full rounded border p-2 text-sm text-gray-900"
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-900">
+              <input
+                type="checkbox"
+                checked={newVariant.isGiftOnly}
+                onChange={(e) =>
+                  setNewVariant({ ...newVariant, isGiftOnly: e.target.checked })
+                }
+              />
+              贈答用
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={addingVariant}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAddVariantSubmit}
+              disabled={
+                addingVariant ||
+                !newVariant.label.trim() ||
+                !newVariant.weightKg ||
+                !newVariant.priceJpy
+              }
+            >
+              {addingVariant ? "追加中..." : "追加する"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
