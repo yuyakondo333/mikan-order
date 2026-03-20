@@ -76,8 +76,9 @@ export function AdminProductsManager({
     ),
   });
 
+  const [deleteFormKey, setDeleteFormKey] = useState(0);
   const [deleteForm, deleteFields] = useForm({
-    id: "delete-confirm",
+    id: `delete-confirm-${deleteFormKey}`,
     shouldValidate: "onInput",
     shouldRevalidate: "onInput",
     onValidate({ formData }) {
@@ -207,7 +208,7 @@ export function AdminProductsManager({
   function closeDeleteDialog() {
     setDeleteTarget(null);
     setDeleteStep(1);
-    deleteForm.reset();
+    setDeleteFormKey((k) => k + 1);
   }
 
   async function handleDelete() {
@@ -510,7 +511,7 @@ export function AdminProductsManager({
             <input
               {...getInputProps(deleteFields.confirmName, { type: "text" })}
               placeholder={deleteTarget?.name}
-              className="w-full rounded border border-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+              className="w-full rounded border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
               autoFocus
             />
             {deleteFields.confirmName.errors && (
@@ -525,7 +526,11 @@ export function AdminProductsManager({
               <AlertDialogAction
                 type="submit"
                 variant="destructive"
-                disabled={deleting || !deleteFields.confirmName.valid}
+                disabled={
+                  deleting ||
+                  !deleteFields.confirmName.value ||
+                  deleteFields.confirmName.value !== deleteTarget?.name
+                }
               >
                 {deleting ? "削除中..." : "完全に削除する"}
               </AlertDialogAction>
