@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db } from "@/db";
-import { orders, users, products } from "@/db/schema";
+import { orders, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getAllOrders() {
@@ -23,74 +23,39 @@ export async function getOrdersByLineUserId(lineUserId: string) {
   return db.select().from(orders).where(eq(orders.userId, user.id));
 }
 
-export async function getOrderWithUserAndItems(id: string) {
-  const order = await db.query.orders.findFirst({
-    where: eq(orders.id, id),
-    with: {
-      user: true,
-      items: true,
-    },
-  });
-
-  if (!order) return null;
-
-  const itemsWithProduct = await Promise.all(
-    order.items.map(async (item) => {
-      const product = await db.query.products.findFirst({
-        where: eq(products.id, item.productId),
-      });
-      return {
-        ...item,
-        productName: product?.name ?? "不明な商品",
-      };
-    })
-  );
-
-  return {
-    ...order,
-    items: itemsWithProduct,
-  };
-}
-
-export async function getOrderDetail(id: string) {
-  const order = await db.query.orders.findFirst({
-    where: eq(orders.id, id),
-    with: {
-      address: true,
-      items: true,
-    },
-  });
-
-  if (!order) return null;
-
-  const itemsWithProduct = await Promise.all(
-    order.items.map(async (item) => {
-      const product = await db.query.products.findFirst({
-        where: eq(products.id, item.productId),
-      });
-      return {
-        ...item,
-        productName: product?.name ?? "不明な商品",
-        productVariety: product?.variety ?? "",
-      };
-    })
-  );
-
-  return {
-    ...order,
-    items: itemsWithProduct,
-  };
-}
-
 /**
- * スナップショットベースの注文取得（N+1解消）。
- * order_items の productName, label, weightKg から直接取得。
+ * スナップショットベースの注文取得（user付き、N+1解消）。
  */
 export async function getOrderWithUserAndItemsV2(id: string) {
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, id),
     with: {
       user: true,
+      items: true,
+    },
+  });
+
+  if (!order) return null;
+
+  return {
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      productName: item.productName ?? "不明な商品",
+      label: item.label ?? "",
+      weightKg: item.weightKg ?? "0",
+    })),
+  };
+}
+
+/**
+ * スナップショットベースの注文詳細取得（顧客向け、address付き）。
+ */
+export async function getOrderDetailV2(id: string) {
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, id),
+    with: {
+      address: true,
       items: true,
     },
   });

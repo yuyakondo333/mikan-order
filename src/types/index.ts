@@ -1,28 +1,11 @@
 export type Product = {
   id: string;
   name: string;
-  variety: string;
-  weightGrams: number;
-  priceJpy: number;
+  stockKg: string;
   imageUrl: string | null;
-  stock: number;
-  stockUnit: string;
   isAvailable: boolean;
   description: string | null;
   createdAt: Date | string;
-  updatedAt: Date | string;
-};
-
-export type CartItemWithProduct = {
-  id: string;
-  productId: string;
-  quantity: number;
-  name: string;
-  priceJpy: number;
-  weightGrams: number;
-  stockUnit: string;
-  stock: number;
-  isAvailable: boolean;
   updatedAt: Date | string;
 };
 
@@ -39,11 +22,7 @@ export type ProductVariant = {
   updatedAt: Date | string;
 };
 
-export type ProductWithVariants = Omit<
-  Product,
-  "variety" | "weightGrams" | "priceJpy" | "stock" | "stockUnit"
-> & {
-  stockKg: string;
+export type ProductWithVariants = Product & {
   variants: ProductVariant[];
 };
 

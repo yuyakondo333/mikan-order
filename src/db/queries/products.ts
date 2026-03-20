@@ -5,22 +5,8 @@ import { products, productVariants } from "@/db/schema";
 import { eq, sql, and, gte, asc } from "drizzle-orm";
 import type { ProductWithVariants } from "@/types";
 
-export async function getAvailableProducts() {
-  return db
-    .select()
-    .from(products)
-    .where(eq(products.isAvailable, true));
-}
-
-export async function getAllProducts() {
-  return db.select().from(products);
-}
-
 /**
  * 販売中商品をバリエーション付きで取得。
- * - products.isAvailable = true
- * - variants.isAvailable = true のみ（displayOrder順）
- * - 全variantが非公開の商品は除外
  */
 export async function getAvailableProductsWithVariants(): Promise<
   ProductWithVariants[]
@@ -34,7 +20,6 @@ export async function getAvailableProductsWithVariants(): Promise<
       },
     },
   });
-  // 全variantが非公開（= フィルタ後0件）の商品を除外
   return result.filter((p) => p.variants.length > 0) as ProductWithVariants[];
 }
 
@@ -82,16 +67,7 @@ export async function createProduct(data: {
 
 export async function updateProduct(
   id: string,
-  data: Partial<{
-    name: string;
-    variety: string;
-    weightGrams: number;
-    priceJpy: number;
-    description: string | null;
-    stock: number;
-    stockUnit: string;
-    isAvailable: boolean;
-  }>
+  data: Partial<Record<string, unknown>>
 ) {
   await db.update(products).set(data).where(eq(products.id, id));
 }
@@ -101,24 +77,7 @@ export async function deleteProduct(id: string) {
 }
 
 /**
- * 1回の購入で消費する在庫量を計算する。
- * - kg: quantity × weightGrams / 1000
- * - その他 (箱, 個 etc.): quantity × 1
- */
-export function calcStockConsumption(
-  quantity: number,
-  weightGrams: number,
-  stockUnit: string
-): number {
-  if (stockUnit === "kg") {
-    return (quantity * weightGrams) / 1000;
-  }
-  return quantity;
-}
-
-/**
- * 1回の購入で消費する在庫量を計算する（kg単位版）。
- * quantity × weightKg (string → number変換)
+ * 1回の購入で消費する在庫量を計算する（kg単位）。
  */
 export function calcStockConsumptionKg(
   quantity: number,
@@ -128,29 +87,7 @@ export function calcStockConsumptionKg(
 }
 
 /**
- * 在庫を原子的に減算する。在庫不足の場合は空配列を返す。
- */
-export async function deductStock(id: string, amount: number) {
-  return db
-    .update(products)
-    .set({ stock: sql`${products.stock} - ${amount}` })
-    .where(and(eq(products.id, id), gte(products.stock, amount)))
-    .returning();
-}
-
-/**
- * 在庫を復元する（キャンセル時）。
- */
-export async function restoreStock(id: string, amount: number) {
-  await db
-    .update(products)
-    .set({ stock: sql`${products.stock} + ${amount}` })
-    .where(eq(products.id, id));
-}
-
-/**
  * 在庫を原子的に減算する（stockKg版）。在庫不足の場合は空配列を返す。
- * Drizzle の numeric カラムは string で比較する（PostgreSQL が適切にキャスト）。
  */
 export async function deductStockKg(productId: string, amountKg: number) {
   return db
