@@ -417,8 +417,7 @@ export function AdminProductsManager({
                         className="flex items-center justify-between text-sm"
                       >
                         <span className="text-gray-900">
-                          {v.label} - {v.weightKg}kg -
-                          ¥{v.priceJpy.toLocaleString()}
+                          {v.label} - ¥{v.priceJpy.toLocaleString()}
                           {v.isGiftOnly && " 🎁"}
                           {!v.isAvailable && " (非公開)"}
                         </span>
