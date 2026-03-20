@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getOrderDetail } from "@/db/queries/orders";
+import { getOrderDetailV2 } from "@/db/queries/orders";
 import { OrderDetailView } from "@/components/order-detail-view";
 import { notFound } from "next/navigation";
 
@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const order = await getOrderDetail(id);
+  const order = await getOrderDetailV2(id);
   if (!order) {
     return { title: "注文が見つかりません" };
   }
@@ -24,7 +24,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = await getOrderDetail(id);
+  const order = await getOrderDetailV2(id);
   if (!order) notFound();
   return <OrderDetailView order={order} />;
 }

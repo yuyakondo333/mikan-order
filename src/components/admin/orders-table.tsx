@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { updateOrderStatusAction } from "@/app/actions/orders";
+import { updateOrderStatusByVariantAction } from "@/app/actions/orders";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import type { Order, Address, User } from "@/types";
 
@@ -84,7 +84,7 @@ export function AdminOrdersTable({
   }, [orders, filterStatus, sortOrder]);
 
   async function updateStatus(orderId: string, status: string) {
-    await updateOrderStatusAction(orderId, status);
+    await updateOrderStatusByVariantAction(orderId, status);
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status } : o))
     );

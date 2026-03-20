@@ -5,34 +5,6 @@ import { cartItems, products, productVariants } from "@/db/schema";
 import { eq, and, gt, sum } from "drizzle-orm";
 import type { CartItemWithVariant } from "@/types";
 
-export async function getCartItem(userId: string, productId: string) {
-  return db.query.cartItems.findFirst({
-    where: and(eq(cartItems.userId, userId), eq(cartItems.productId, productId)),
-  });
-}
-
-export async function upsertCartItem(
-  userId: string,
-  productId: string,
-  quantity: number
-) {
-  await db
-    .insert(cartItems)
-    .values({ userId, productId, quantity, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [cartItems.userId, cartItems.productId],
-      set: { quantity, updatedAt: new Date() },
-    });
-}
-
-export async function deleteCartItem(userId: string, productId: string) {
-  await db
-    .delete(cartItems)
-    .where(
-      and(eq(cartItems.userId, userId), eq(cartItems.productId, productId))
-    );
-}
-
 export async function deleteAllCartItems(userId: string) {
   await db.delete(cartItems).where(eq(cartItems.userId, userId));
 }
@@ -44,32 +16,6 @@ function getCartExpiryDate(): Date {
   date.setDate(date.getDate() - CART_EXPIRY_DAYS);
   return date;
 }
-
-export async function getCartWithProducts(userId: string) {
-  return db
-    .select({
-      id: cartItems.id,
-      productId: cartItems.productId,
-      quantity: cartItems.quantity,
-      name: products.name,
-      priceJpy: products.priceJpy,
-      weightGrams: products.weightGrams,
-      stockUnit: products.stockUnit,
-      stock: products.stock,
-      isAvailable: products.isAvailable,
-      updatedAt: cartItems.updatedAt,
-    })
-    .from(cartItems)
-    .innerJoin(products, eq(cartItems.productId, products.id))
-    .where(
-      and(
-        eq(cartItems.userId, userId),
-        gt(cartItems.updatedAt, getCartExpiryDate())
-      )
-    );
-}
-
-// --- Variant-aware functions (新スキーマ対応) ---
 
 export async function getCartItemByVariant(
   userId: string,
