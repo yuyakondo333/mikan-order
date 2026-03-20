@@ -1,37 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { loginAdmin } from "@/app/actions/admin";
 
 export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
+    startTransition(async () => {
+      const result = await loginAdmin(password);
 
-      if (res.ok) {
+      if (result.success) {
         router.push("/admin/orders");
       } else {
-        const data = await res.json();
-        setError(data.error || "ログインに失敗しました");
+        setError(result.error || "ログインに失敗しました");
       }
-    } catch {
-      setError("通信エラーが発生しました");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -50,14 +41,14 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="パスワード"
           className="w-full rounded border p-2"
-          disabled={loading}
+          disabled={isPending}
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={isPending}
           className="w-full rounded bg-gray-800 py-2 text-white hover:bg-gray-900 disabled:opacity-50"
         >
-          {loading ? "ログイン中..." : "ログイン"}
+          {isPending ? "ログイン中..." : "ログイン"}
         </button>
       </form>
     </div>

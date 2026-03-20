@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
+import { createOrder } from "@/app/actions/orders";
 import type { CartItemWithProduct } from "@/types";
 
 type PickupData = {
@@ -63,19 +64,13 @@ export function ConfirmContent({ items }: { items: CartItemWithProduct[] }) {
     if (!fulfillment) return;
 
     startTransition(async () => {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order: fulfillment }),
-      });
+      const result = await createOrder(fulfillment);
 
-      if (res.ok) {
+      if (result.success) {
         sessionStorage.removeItem("orderFulfillment");
-        const method = fulfillment.fulfillmentMethod;
-        router.push(`/complete?method=${method}`);
+        router.push(`/complete?method=${result.fulfillmentMethod}`);
       } else {
-        const data = await res.json();
-        alert(data.error || "注文に失敗しました");
+        alert(result.error || "注文に失敗しました");
       }
     });
   }
