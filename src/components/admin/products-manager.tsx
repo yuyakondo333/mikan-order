@@ -55,6 +55,12 @@ export function AdminProductsManager({
   const [addVariantTarget, setAddVariantTarget] = useState<string | null>(null);
   const [newVariant, setNewVariant] = useState<VariantDraft>({ ...emptyVariant });
   const [addingVariant, setAddingVariant] = useState(false);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [editingVariantData, setEditingVariantData] = useState<VariantDraft & { isAvailable: boolean }>({
+    ...emptyVariant,
+    isAvailable: true,
+  });
+  const [savingVariant, setSavingVariant] = useState(false);
 
   function resetForm() {
     setShowForm(false);
@@ -200,6 +206,60 @@ export function AdminProductsManager({
             : p
         )
       );
+    }
+  }
+
+  function startEditVariant(v: ProductVariant) {
+    setEditingVariantId(v.id);
+    setEditingVariantData({
+      label: v.label,
+      weightKg: v.weightKg,
+      priceJpy: String(v.priceJpy),
+      isGiftOnly: v.isGiftOnly,
+      isAvailable: v.isAvailable,
+    });
+  }
+
+  function cancelEditVariant() {
+    setEditingVariantId(null);
+  }
+
+  async function handleSaveVariant(variantId: string, productId: string) {
+    setSavingVariant(true);
+    try {
+      const result = await updateVariantAction(variantId, {
+        label: editingVariantData.label,
+        weightKg: editingVariantData.weightKg,
+        priceJpy: Number(editingVariantData.priceJpy),
+        isGiftOnly: editingVariantData.isGiftOnly,
+        isAvailable: editingVariantData.isAvailable,
+      });
+      if (result.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId
+              ? {
+                  ...p,
+                  variants: p.variants.map((v) =>
+                    v.id === variantId
+                      ? {
+                          ...v,
+                          label: editingVariantData.label,
+                          weightKg: editingVariantData.weightKg,
+                          priceJpy: Number(editingVariantData.priceJpy),
+                          isGiftOnly: editingVariantData.isGiftOnly,
+                          isAvailable: editingVariantData.isAvailable,
+                        }
+                      : v
+                  ),
+                }
+              : p
+          )
+        );
+        setEditingVariantId(null);
+      }
+    } finally {
+      setSavingVariant(false);
     }
   }
 
@@ -436,30 +496,138 @@ export function AdminProductsManager({
                     : "バリエーションを表示"}
                 </button>
                 {expandedProduct === product.id && (
-                  <div className="mt-2 space-y-1 border-t pt-2">
-                    {product.variants.map((v) => (
-                      <div
-                        key={v.id}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-gray-900">
-                          {v.label} - ¥{v.priceJpy.toLocaleString()}
-                          {v.isGiftOnly && " 🎁"}
-                          {!v.isAvailable && " (非公開)"}
-                        </span>
-                        <button
-                          onClick={() =>
-                            handleDeleteVariant(v.id, product.id)
-                          }
-                          className="text-xs text-red-500 hover:text-red-700"
-                        >
-                          削除
-                        </button>
-                      </div>
-                    ))}
+                  <div className="mt-2 border-t pt-3">
+                    <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-sm">
+                      <thead>
+                        <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-3 py-2">ラベル</th>
+                          <th className="px-3 py-2">価格</th>
+                          <th className="px-3 py-2">区分</th>
+                          <th className="px-3 py-2">状態</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {product.variants.map((v) =>
+                          editingVariantId === v.id ? (
+                            <tr key={v.id} className="border-t border-gray-200">
+                              <td className="px-3 py-2.5">
+                                <input
+                                  value={editingVariantData.label}
+                                  onChange={(e) =>
+                                    setEditingVariantData({ ...editingVariantData, label: e.target.value })
+                                  }
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                                />
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <input
+                                  type="number"
+                                  value={editingVariantData.priceJpy}
+                                  onChange={(e) =>
+                                    setEditingVariantData({ ...editingVariantData, priceJpy: e.target.value })
+                                  }
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                                />
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <label className="flex items-center gap-1.5 text-sm text-gray-900">
+                                  <input
+                                    type="checkbox"
+                                    checked={editingVariantData.isGiftOnly}
+                                    onChange={(e) =>
+                                      setEditingVariantData({ ...editingVariantData, isGiftOnly: e.target.checked })
+                                    }
+                                  />
+                                  贈答用
+                                </label>
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <label className="flex items-center gap-1.5 text-sm text-gray-900">
+                                  <input
+                                    type="checkbox"
+                                    checked={editingVariantData.isAvailable}
+                                    onChange={(e) =>
+                                      setEditingVariantData({ ...editingVariantData, isAvailable: e.target.checked })
+                                    }
+                                  />
+                                  公開
+                                </label>
+                              </td>
+                              <td className="px-3 py-2.5 text-right">
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    onClick={() => handleSaveVariant(v.id, product.id)}
+                                    disabled={savingVariant}
+                                    className="rounded border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                                  >
+                                    {savingVariant ? "保存中..." : "保存"}
+                                  </button>
+                                  <button
+                                    onClick={cancelEditVariant}
+                                    className="rounded border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                  >
+                                    戻す
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr key={v.id} className="border-t border-gray-200">
+                              <td className="px-3 py-2.5 font-medium text-gray-900">
+                                {v.label}
+                              </td>
+                              <td className="px-3 py-2.5 text-gray-900">
+                                ¥{v.priceJpy.toLocaleString()}
+                              </td>
+                              <td className="px-3 py-2.5">
+                                {v.isGiftOnly ? (
+                                  <span className="rounded bg-pink-100 px-1.5 py-0.5 text-xs text-pink-700">
+                                    贈答用
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">
+                                    通常
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5">
+                                {v.isAvailable ? (
+                                  <span className="text-xs text-green-600">
+                                    公開
+                                  </span>
+                                ) : (
+                                  <span className="rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-600">
+                                    非公開
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 text-right">
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    onClick={() => startEditVariant(v)}
+                                    className="rounded border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-gray-50"
+                                  >
+                                    編集
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteVariant(v.id, product.id)
+                                    }
+                                    className="rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                                  >
+                                    削除
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
                     <button
                       onClick={() => openAddVariantModal(product.id)}
-                      className="text-xs text-orange-600 hover:underline"
+                      className="mt-2 text-xs font-medium text-orange-600 hover:underline"
                     >
                       + バリエーション追加
                     </button>
@@ -470,13 +638,13 @@ export function AdminProductsManager({
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => openEditForm(product)}
-                  className="rounded bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                  className="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-900 hover:bg-gray-50"
                 >
                   編集
                 </button>
                 <button
                   onClick={() => handleDeleteProduct(product.id)}
-                  className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                  className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                 >
                   削除
                 </button>
