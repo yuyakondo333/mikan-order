@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/admin/logout-button";
+import { AdminNavLink } from "@/components/admin/admin-nav-link";
 
 export default async function AdminLayout({
   children,
@@ -16,24 +16,9 @@ export default async function AdminLayout({
         <nav className="border-b bg-white px-6 py-3">
           <div className="flex items-center gap-6">
             <span className="font-bold text-gray-900">管理画面</span>
-            <Link
-              href="/admin/orders"
-              className="text-sm text-gray-900 hover:text-black"
-            >
-              注文管理
-            </Link>
-            <Link
-              href="/admin/products"
-              className="text-sm text-gray-900 hover:text-black"
-            >
-              商品管理
-            </Link>
-            <Link
-              href="/admin/legal"
-              className="text-sm text-gray-900 hover:text-black"
-            >
-              特商法表記
-            </Link>
+            <AdminNavLink href="/admin/orders">注文管理</AdminNavLink>
+            <AdminNavLink href="/admin/products">商品管理</AdminNavLink>
+            <AdminNavLink href="/admin/legal">特商法表記</AdminNavLink>
             <div className="ml-auto">
               <LogoutButton />
             </div>
