@@ -10,44 +10,49 @@ vi.mock("@/lib/dal", () => ({
 
 vi.mock("@/db/queries/cart", () => ({
   getCartWithProducts: vi.fn(),
-  deleteAllCartItems: vi.fn(),
 }));
 
 vi.mock("@/db/queries/products", () => ({
   calcStockConsumption: vi.fn(),
-  deductStock: vi.fn(),
+  restoreStock: vi.fn(),
 }));
 
 vi.mock("@/db", () => ({
   db: {
-    insert: vi.fn(),
+    transaction: vi.fn(),
+    query: { products: { findFirst: vi.fn() } },
   },
 }));
 
 vi.mock("@/lib/line", () => ({
   sendOrderConfirmationWithPickup: vi.fn(),
   sendOrderConfirmationWithBankTransfer: vi.fn(),
+  sendPickupReadyNotification: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("next/headers", () => {
+  const set = vi.fn();
+  const get = vi.fn();
+  return {
+    cookies: vi.fn().mockResolvedValue({ set, get }),
+  };
+});
+
 import { getAuthenticatedUser } from "@/lib/dal";
-import {
-  getCartWithProducts,
-  deleteAllCartItems,
-} from "@/db/queries/cart";
-import { calcStockConsumption, deductStock } from "@/db/queries/products";
+import { getCartWithProducts } from "@/db/queries/cart";
+import { calcStockConsumption } from "@/db/queries/products";
 import { db } from "@/db";
-import { createOrder } from "@/app/actions/orders";
+import { cookies } from "next/headers";
+import { createOrder, updateOrderStatusAction } from "@/app/actions/orders";
 
 const mockGetAuthenticatedUser = vi.mocked(getAuthenticatedUser);
 const mockGetCartWithProducts = vi.mocked(getCartWithProducts);
-const mockDeleteAllCartItems = vi.mocked(deleteAllCartItems);
 const mockCalcStockConsumption = vi.mocked(calcStockConsumption);
-const mockDeductStock = vi.mocked(deductStock);
-const mockDbInsert = vi.mocked(db.insert);
+const mockDbTransaction = vi.mocked(db.transaction);
 
 const mockUser = {
   id: "user-1",
@@ -100,11 +105,23 @@ const deliveryFulfillment = {
   },
 };
 
-function setupInsertChain(returnValue: unknown) {
-  const returning = vi.fn().mockResolvedValue([returnValue]);
-  const values = vi.fn().mockReturnValue({ returning });
-  mockDbInsert.mockReturnValue({ values } as never);
-  return { values, returning };
+function createMockTx() {
+  const mockWhere = vi.fn();
+  const mockSet = vi.fn().mockReturnValue({ where: mockWhere });
+  const mockReturning = vi.fn();
+  const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
+  const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
+
+  return {
+    tx: {
+      update: vi.fn().mockReturnValue({ set: mockSet }),
+      insert: vi.fn().mockReturnValue({ values: mockValues }),
+      delete: vi.fn().mockReturnValue({ where: mockDeleteWhere }),
+    },
+    mockWhere,
+    mockReturning,
+    mockValues,
+  };
 }
 
 describe("createOrder", () => {
@@ -152,7 +169,7 @@ describe("createOrder", () => {
     expect((result as { error: string }).error).toContain("販売停止");
   });
 
-  it("在庫不足の場合はエラーを返す", async () => {
+  it("在庫不足の場合はエラーを返す（事前チェック）", async () => {
     mockGetAuthenticatedUser.mockResolvedValue(mockUser);
     mockGetCartWithProducts.mockResolvedValue(mockCartItems);
     mockCalcStockConsumption.mockReturnValue(100); // 在庫10に対して100必要
@@ -161,13 +178,21 @@ describe("createOrder", () => {
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("在庫");
+    // トランザクションが呼ばれないことを確認
+    expect(mockDbTransaction).not.toHaveBeenCalled();
   });
 
-  it("在庫の原子的減算が失敗した場合はエラーを返す", async () => {
+  it("トランザクション内で在庫減算が失敗した場合はロールバックされる", async () => {
     mockGetAuthenticatedUser.mockResolvedValue(mockUser);
     mockGetCartWithProducts.mockResolvedValue(mockCartItems);
     mockCalcStockConsumption.mockReturnValue(6);
-    mockDeductStock.mockResolvedValue([]); // 減算失敗
+
+    // トランザクション内で在庫減算が空配列を返す
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      mockWhere.mockReturnValue({ returning: vi.fn().mockResolvedValue([]) });
+      return callback(tx as never);
+    });
 
     const result = await createOrder(pickupFulfillment);
 
@@ -179,42 +204,30 @@ describe("createOrder", () => {
     mockGetAuthenticatedUser.mockResolvedValue(mockUser);
     mockGetCartWithProducts.mockResolvedValue(mockCartItems);
     mockCalcStockConsumption.mockReturnValue(6);
-    mockDeductStock.mockResolvedValue([{ id: "product-1" }]);
 
-    // order insert
-    const orderInsert = setupInsertChain({ id: "order-1" });
-    // orderItems insert (returning不要)
-    let insertCallCount = 0;
-    mockDbInsert.mockImplementation(() => {
-      insertCallCount++;
-      if (insertCallCount === 1) {
-        // orders insert
-        return orderInsert.values as never;
-      }
-      // orderItems insert
-      return {
-        values: vi.fn().mockReturnValue(undefined),
-      } as never;
-    });
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere, mockReturning, mockValues } = createMockTx();
+      // deductStock 成功
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "product-1" }]),
+      });
+      // orders insert
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          // orders
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+            }),
+          };
+        }
+        // orderItems
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
 
-    // Re-setup for clean mock
-    vi.clearAllMocks();
-    mockGetAuthenticatedUser.mockResolvedValue(mockUser);
-    mockGetCartWithProducts.mockResolvedValue(mockCartItems);
-    mockCalcStockConsumption.mockReturnValue(6);
-    mockDeductStock.mockResolvedValue([{ id: "product-1" }]);
-
-    const orderReturning = vi.fn().mockResolvedValue([{ id: "order-1" }]);
-    const orderValues = vi.fn().mockReturnValue({ returning: orderReturning });
-    const itemsValues = vi.fn().mockResolvedValue(undefined);
-
-    let callIndex = 0;
-    mockDbInsert.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) {
-        return { values: orderValues } as never;
-      }
-      return { values: itemsValues } as never;
+      return callback(tx as never);
     });
 
     const result = await createOrder(pickupFulfillment);
@@ -223,42 +236,45 @@ describe("createOrder", () => {
       success: true,
       fulfillmentMethod: "pickup",
     });
-    expect(mockDeleteAllCartItems).toHaveBeenCalledWith("user-1");
+    expect(mockDbTransaction).toHaveBeenCalled();
   });
 
   it("配送注文を正常に作成できる（住所も保存される）", async () => {
     mockGetAuthenticatedUser.mockResolvedValue(mockUser);
     mockGetCartWithProducts.mockResolvedValue(mockCartItems);
     mockCalcStockConsumption.mockReturnValue(6);
-    mockDeductStock.mockResolvedValue([{ id: "product-1" }]);
 
-    const addressReturning = vi
-      .fn()
-      .mockResolvedValue([{ id: "address-1" }]);
-    const addressValues = vi
-      .fn()
-      .mockReturnValue({ returning: addressReturning });
-    const orderReturning = vi
-      .fn()
-      .mockResolvedValue([{ id: "order-1" }]);
-    const orderValues = vi
-      .fn()
-      .mockReturnValue({ returning: orderReturning });
-    const itemsValues = vi.fn().mockResolvedValue(undefined);
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      // deductStock 成功
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "product-1" }]),
+      });
+      // insert: address → order → orderItems → delete cart
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          // addresses
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "address-1" }]),
+            }),
+          };
+        }
+        if (insertCall === 2) {
+          // orders
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+            }),
+          };
+        }
+        // orderItems
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
 
-    let callIndex = 0;
-    mockDbInsert.mockImplementation(() => {
-      callIndex++;
-      if (callIndex === 1) {
-        // addresses insert
-        return { values: addressValues } as never;
-      }
-      if (callIndex === 2) {
-        // orders insert
-        return { values: orderValues } as never;
-      }
-      // orderItems insert
-      return { values: itemsValues } as never;
+      return callback(tx as never);
     });
 
     const result = await createOrder(deliveryFulfillment);
@@ -267,6 +283,24 @@ describe("createOrder", () => {
       success: true,
       fulfillmentMethod: "delivery",
     });
-    expect(mockDeleteAllCartItems).toHaveBeenCalledWith("user-1");
+    expect(mockDbTransaction).toHaveBeenCalled();
+  });
+});
+
+describe("updateOrderStatusAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("管理者セッションがない場合はエラーを返す", async () => {
+    const cookieStore = await cookies();
+    vi.mocked(cookieStore.get).mockReturnValue(undefined);
+
+    const result = await updateOrderStatusAction("order-1", "preparing");
+
+    expect(result).toEqual({
+      success: false,
+      error: "管理者認証が必要です",
+    });
   });
 });

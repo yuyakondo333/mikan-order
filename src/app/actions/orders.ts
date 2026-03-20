@@ -3,12 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/dal";
 import { updateOrderStatus, getOrderWithUserAndItems } from "@/db/queries/orders";
-import { getCartWithProducts, deleteAllCartItems } from "@/db/queries/cart";
-import {
-  restoreStock,
-  calcStockConsumption,
-  deductStock,
-} from "@/db/queries/products";
+import { getCartWithProducts } from "@/db/queries/cart";
+import { restoreStock, calcStockConsumption } from "@/db/queries/products";
 import {
   sendPickupReadyNotification,
   sendOrderConfirmationWithPickup,
@@ -16,9 +12,10 @@ import {
 } from "@/lib/line";
 import { fulfillmentSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
+import { cookies } from "next/headers";
 import { db } from "@/db";
-import { orders, orderItems, addresses, products } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { orders, orderItems, addresses, cartItems, products } from "@/db/schema";
+import { eq, and, gte, sql } from "drizzle-orm";
 
 type OrderActionResult =
   | { success: true; fulfillmentMethod: string }
@@ -38,20 +35,20 @@ export async function createOrder(
   const orderData = parsed.data;
 
   try {
-    const cartItems = await getCartWithProducts(user.id);
+    const cartItemList = await getCartWithProducts(user.id);
 
-    if (cartItems.length === 0) {
+    if (cartItemList.length === 0) {
       return { success: false, error: "カートが空です" };
     }
 
     // 販売停止商品チェック
-    const unavailableItems = cartItems.filter((item) => !item.isAvailable);
+    const unavailableItems = cartItemList.filter((item) => !item.isAvailable);
     if (unavailableItems.length > 0) {
       return { success: false, error: "販売停止中の商品が含まれています" };
     }
 
-    // 在庫チェック
-    for (const item of cartItems) {
+    // 在庫チェック（事前チェック。トランザクション内で再度確認）
+    for (const item of cartItemList) {
       const required = calcStockConsumption(
         item.quantity,
         item.weightGrams,
@@ -62,70 +59,80 @@ export async function createOrder(
       }
     }
 
-    // 在庫を原子的に減算
-    for (const item of cartItems) {
-      const required = calcStockConsumption(
-        item.quantity,
-        item.weightGrams,
-        item.stockUnit
-      );
-      const result = await deductStock(item.productId, required);
-      if (result.length === 0) {
-        return {
-          success: false,
-          error: "在庫が不足しています。再度お試しください。",
-        };
-      }
-    }
-
     // 合計金額はDBの商品価格から計算
-    const totalJpy = cartItems.reduce(
+    const totalJpy = cartItemList.reduce(
       (sum, item) => sum + item.priceJpy * item.quantity,
       0
     );
 
-    let addressId: string | null = null;
-    let initialStatus: "pending" | "awaiting_payment" = "pending";
+    // 在庫減算〜注文作成〜カートクリアをトランザクションで実行
+    const order = await db.transaction(async (tx) => {
+      // 在庫を原子的に減算
+      for (const item of cartItemList) {
+        const required = calcStockConsumption(
+          item.quantity,
+          item.weightGrams,
+          item.stockUnit
+        );
+        const result = await tx
+          .update(products)
+          .set({ stock: sql`${products.stock} - ${required}` })
+          .where(
+            and(eq(products.id, item.productId), gte(products.stock, required))
+          )
+          .returning();
+        if (result.length === 0) {
+          throw new Error("在庫が不足しています。再度お試しください。");
+        }
+      }
 
-    if (orderData.fulfillmentMethod === "delivery") {
-      const [newAddress] = await db
-        .insert(addresses)
-        .values({ ...orderData.address, userId: user.id })
+      let addressId: string | null = null;
+      let initialStatus: "pending" | "awaiting_payment" = "pending";
+
+      if (orderData.fulfillmentMethod === "delivery") {
+        const [newAddress] = await tx
+          .insert(addresses)
+          .values({ ...orderData.address, userId: user.id })
+          .returning();
+        addressId = newAddress.id;
+        initialStatus = "awaiting_payment";
+      }
+
+      const [newOrder] = await tx
+        .insert(orders)
+        .values({
+          userId: user.id,
+          fulfillmentMethod: orderData.fulfillmentMethod,
+          pickupDate:
+            orderData.fulfillmentMethod === "pickup"
+              ? orderData.pickupDate
+              : null,
+          pickupTimeSlot:
+            orderData.fulfillmentMethod === "pickup"
+              ? orderData.pickupTimeSlot
+              : null,
+          addressId,
+          status: initialStatus,
+          totalJpy,
+        })
         .returning();
-      addressId = newAddress.id;
-      initialStatus = "awaiting_payment";
-    }
 
-    const [order] = await db
-      .insert(orders)
-      .values({
-        userId: user.id,
-        fulfillmentMethod: orderData.fulfillmentMethod,
-        pickupDate:
-          orderData.fulfillmentMethod === "pickup"
-            ? orderData.pickupDate
-            : null,
-        pickupTimeSlot:
-          orderData.fulfillmentMethod === "pickup"
-            ? orderData.pickupTimeSlot
-            : null,
-        addressId,
-        status: initialStatus,
-        totalJpy,
-      })
-      .returning();
+      await tx.insert(orderItems).values(
+        cartItemList.map((item) => ({
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPriceJpy: item.priceJpy,
+        }))
+      );
 
-    await db.insert(orderItems).values(
-      cartItems.map((item) => ({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPriceJpy: item.priceJpy,
-      }))
-    );
+      // カートをクリア
+      await tx
+        .delete(cartItems)
+        .where(eq(cartItems.userId, user.id));
 
-    // カートをクリア
-    await deleteAllCartItems(user.id);
+      return newOrder;
+    });
 
     // LINE通知（失敗しても注文は成功扱い）
     try {
@@ -157,14 +164,29 @@ export async function createOrder(
     return { success: true, fulfillmentMethod: orderData.fulfillmentMethod };
   } catch (e) {
     console.error("Failed to create order:", e);
+    // トランザクション内で投げたエラーメッセージをそのまま返す
+    if (e instanceof Error && e.message.includes("在庫")) {
+      return { success: false, error: e.message };
+    }
     return { success: false, error: "注文の作成に失敗しました" };
   }
+}
+
+async function verifyAdminSession(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("admin_session");
+  return !!session?.value;
 }
 
 export async function updateOrderStatusAction(
   orderId: string,
   status: string
 ) {
+  const isAdmin = await verifyAdminSession();
+  if (!isAdmin) {
+    return { success: false, error: "管理者認証が必要です" };
+  }
+
   try {
     // キャンセル時は在庫を復元
     if (status === "cancelled") {
