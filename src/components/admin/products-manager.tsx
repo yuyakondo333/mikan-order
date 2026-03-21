@@ -20,20 +20,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { ProductWithVariants, ProductVariant } from "@/types";
-
-type VariantDraft = {
-  label: string;
-  weightKg: string;
-  priceJpy: string;
-  isGiftOnly: boolean;
-};
-
-const emptyVariant: VariantDraft = {
-  label: "",
-  weightKg: "",
-  priceJpy: "",
-  isGiftOnly: false,
-};
+import {
+  type VariantDraft,
+  type VariantEdit,
+  emptyVariant,
+  getVariantEdit as getVariantEditPure,
+  isVariantDirty as isVariantDirtyPure,
+  getDirtyVariants as getDirtyVariantsPure,
+  buildProductsAfterVariantSave,
+} from "./products-manager.utils";
 
 export function AdminProductsManager({
   initialProducts,
@@ -55,9 +50,7 @@ export function AdminProductsManager({
   const [addVariantTarget, setAddVariantTarget] = useState<string | null>(null);
   const [newVariant, setNewVariant] = useState<VariantDraft>({ ...emptyVariant });
   const [addingVariant, setAddingVariant] = useState(false);
-  const [variantEdits, setVariantEdits] = useState<
-    Record<string, { label: string; priceJpy: string; isGiftOnly: boolean; isAvailable: boolean }>
-  >({});
+  const [variantEdits, setVariantEdits] = useState<Record<string, VariantEdit>>({});
   const [savingVariants, setSavingVariants] = useState(false);
 
   function resetForm() {
@@ -223,39 +216,25 @@ export function AdminProductsManager({
   }
 
   function getVariantEdit(v: ProductVariant) {
-    return variantEdits[v.id] ?? {
-      label: v.label,
-      priceJpy: String(v.priceJpy),
-      isGiftOnly: v.isGiftOnly,
-      isAvailable: v.isAvailable,
-    };
+    return getVariantEditPure(v, variantEdits);
   }
 
   function updateVariantField(variantId: string, original: ProductVariant, field: string, value: string | boolean) {
     setVariantEdits((prev) => ({
       ...prev,
       [variantId]: {
-        ...getVariantEdit(original),
+        ...getVariantEditPure(original, prev),
         [field]: value,
       },
     }));
   }
 
   function isVariantDirty(v: ProductVariant): boolean {
-    const edit = variantEdits[v.id];
-    if (!edit) return false;
-    return (
-      edit.label !== v.label ||
-      edit.priceJpy !== String(v.priceJpy) ||
-      edit.isGiftOnly !== v.isGiftOnly ||
-      edit.isAvailable !== v.isAvailable
-    );
+    return isVariantDirtyPure(v, variantEdits);
   }
 
   function getDirtyVariants(productId: string): ProductVariant[] {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return [];
-    return product.variants.filter(isVariantDirty);
+    return getDirtyVariantsPure(products, productId, variantEdits);
   }
 
   function resetVariantEdits(productId: string) {
@@ -276,42 +255,35 @@ export function AdminProductsManager({
 
     setSavingVariants(true);
     try {
-      const product = products.find((p) => p.id === productId);
-      if (!product) return;
+      const settled = await Promise.allSettled(
+        dirty.map((v) => {
+          const edit = variantEdits[v.id]!;
+          return updateVariantAction(v.id, {
+            label: edit.label,
+            weightKg: v.weightKg,
+            priceJpy: Number(edit.priceJpy),
+            isGiftOnly: edit.isGiftOnly,
+            isAvailable: edit.isAvailable,
+          });
+        })
+      );
 
-      for (const v of dirty) {
-        const edit = variantEdits[v.id]!;
-        const result = await updateVariantAction(v.id, {
-          label: edit.label,
-          weightKg: v.weightKg,
-          priceJpy: Number(edit.priceJpy),
-          isGiftOnly: edit.isGiftOnly,
-          isAvailable: edit.isAvailable,
-        });
-        if (result.success) {
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === productId
-                ? {
-                    ...p,
-                    variants: p.variants.map((existing) =>
-                      existing.id === v.id
-                        ? {
-                            ...existing,
-                            label: edit.label,
-                            priceJpy: Number(edit.priceJpy),
-                            isGiftOnly: edit.isGiftOnly,
-                            isAvailable: edit.isAvailable,
-                          }
-                        : existing
-                    ),
-                  }
-                : p
-            )
-          );
+      const results = dirty.map((v, i) => ({
+        variantId: v.id,
+        edit: variantEdits[v.id]!,
+        success: settled[i].status === "fulfilled" && (settled[i] as PromiseFulfilledResult<{ success: boolean }>).value.success,
+      }));
+
+      setProducts((prev) => buildProductsAfterVariantSave(prev, productId, results));
+
+      // 成功分のeditsをクリア、失敗分はeditsに残す
+      setVariantEdits((prev) => {
+        const next = { ...prev };
+        for (const r of results) {
+          if (r.success) delete next[r.variantId];
         }
-      }
-      resetVariantEdits(productId);
+        return next;
+      });
     } finally {
       setSavingVariants(false);
     }
