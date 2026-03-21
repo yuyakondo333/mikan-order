@@ -1,8 +1,48 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
+function isWebView(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /wv\)/.test(ua);
+}
+
 export function GoogleLoginButton() {
+  const [inWebView, setInWebView] = useState(false);
+
+  useEffect(() => {
+    setInWebView(isWebView());
+  }, []);
+
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  if (inWebView) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
+          <h1 className="text-xl font-bold">管理画面ログイン</h1>
+          <p className="text-sm text-gray-600">
+            アプリ内ブラウザではGoogleログインが使用できません。
+            以下のボタンから外部ブラウザで開いてください。
+          </p>
+          <a
+            href={currentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            ブラウザで開く
+          </a>
+          <p className="text-xs text-gray-400">
+            または、URLをコピーしてSafari / Chromeで開いてください
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
