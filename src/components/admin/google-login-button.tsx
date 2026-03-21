@@ -3,45 +3,81 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
+type Status = "loading" | "webview" | "browser";
+
 function isWebView(): boolean {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent;
   return /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) || /wv\)/.test(ua);
 }
 
-export function GoogleLoginButton() {
-  const [inWebView, setInWebView] = useState(false);
-
-  useEffect(() => {
-    setInWebView(isWebView());
-  }, []);
-
-  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
-
-  if (inWebView) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
-          <h1 className="text-xl font-bold">管理画面ログイン</h1>
-          <p className="text-sm text-gray-600">
-            アプリ内ブラウザではGoogleログインが使用できません。
-            以下のボタンから外部ブラウザで開いてください。
-          </p>
-          <a
-            href={currentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded bg-blue-600 py-3 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            ブラウザで開く
-          </a>
-          <p className="text-xs text-gray-400">
-            または、URLをコピーしてSafari / Chromeで開いてください
-          </p>
+function Loading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
+        <div className="animate-pulse space-y-4">
+          <div className="h-7 w-48 rounded bg-gray-200" />
+          <div className="h-12 rounded bg-gray-200" />
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function WebViewGuide() {
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.href : "";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // clipboard API非対応の場合はプロンプトで表示
+      window.prompt("このURLをコピーしてください:", url);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-sm space-y-5 rounded-lg bg-white p-8 shadow">
+        <h1 className="text-xl font-bold">管理画面ログイン</h1>
+        <div className="rounded-lg bg-amber-50 p-4">
+          <p className="text-base font-medium text-amber-800">
+            LINEアプリ内ではGoogleログインが使えません
+          </p>
+        </div>
+        <div className="space-y-3">
+          <p className="text-base text-gray-700">
+            以下の手順でログインしてください:
+          </p>
+          <ol className="list-inside list-decimal space-y-2 text-base text-gray-700">
+            <li>下のボタンでURLをコピー</li>
+            <li>SafariまたはChromeを開く</li>
+            <li>アドレスバーに貼り付けて移動</li>
+          </ol>
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 py-4 text-base font-medium text-white hover:bg-blue-700"
+        >
+          {copied ? "コピーしました!" : "URLをコピー"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function GoogleLoginButton() {
+  const [status, setStatus] = useState<Status>("loading");
+
+  useEffect(() => {
+    setStatus(isWebView() ? "webview" : "browser");
+  }, []);
+
+  if (status === "loading") return <Loading />;
+  if (status === "webview") return <WebViewGuide />;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
