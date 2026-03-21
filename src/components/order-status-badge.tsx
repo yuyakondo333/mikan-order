@@ -23,7 +23,7 @@ const statusColors: Record<string, string> = {
 export function OrderStatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`inline-block rounded-full px-3 py-1.5 text-sm font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-900"}`}
+      className={`inline-block rounded-full px-3 py-2 text-base font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-900"}`}
     >
       {statusLabels[status] ?? status}
     </span>

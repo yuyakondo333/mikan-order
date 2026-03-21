@@ -117,7 +117,7 @@ export function LegalInfoEditor({
 
       {message && (
         <div
-          className={`mb-4 rounded p-3 text-base ${
+          className={`mb-4 rounded p-3 text-lg ${
             message.type === "success"
               ? "bg-green-50 text-green-700"
               : "bg-red-50 text-red-700"
@@ -127,12 +127,12 @@ export function LegalInfoEditor({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {fields.map((field) => (
           <div key={field.key}>
             <label
               htmlFor={field.key}
-              className="mb-1 block text-base font-medium text-gray-800"
+              className="mb-1 block text-lg font-medium text-gray-900"
             >
               {field.label}
               {field.required && (
@@ -147,7 +147,7 @@ export function LegalInfoEditor({
                   setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                 }
                 rows={3}
-                className="w-full rounded border border-gray-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 px-3 py-3 text-lg focus:border-blue-500 focus:outline-none"
                 required={field.required}
               />
             ) : (
@@ -158,7 +158,7 @@ export function LegalInfoEditor({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, [field.key]: e.target.value }))
                 }
-                className="w-full rounded border border-gray-300 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none"
+                className="w-full rounded border border-gray-300 px-3 py-3 text-lg focus:border-blue-500 focus:outline-none"
                 required={field.required}
               />
             )}
@@ -168,7 +168,7 @@ export function LegalInfoEditor({
         <button
           type="submit"
           disabled={submitting}
-          className="cursor-pointer rounded bg-blue-600 px-6 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "保存中..." : "保存"}
         </button>

@@ -101,7 +101,7 @@ export function AdminOrdersTable({
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded border px-3 py-2 text-base text-gray-900"
+          className="rounded border px-4 py-3 text-lg text-gray-900"
         >
           {["all", ...allStatuses].map((s) => (
             <option key={s} value={s}>
@@ -112,7 +112,7 @@ export function AdminOrdersTable({
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-          className="rounded border px-3 py-2 text-base text-gray-900"
+          className="rounded border px-4 py-3 text-lg text-gray-900"
         >
           <option value="newest">新しい順</option>
           <option value="oldest">古い順</option>
@@ -120,13 +120,13 @@ export function AdminOrdersTable({
       </div>
 
       {/* 件数表示 */}
-      <p className="mb-3 text-base text-gray-900">
+      <p className="mb-3 text-lg font-medium text-gray-900">
         {filteredOrders.length}件の注文
       </p>
 
       {/* 注文一覧 */}
       {filteredOrders.length === 0 ? (
-        <p className="text-gray-900">
+        <p className="text-lg text-gray-900">
           {filterStatus === "all"
             ? "注文はありません"
             : `${statusLabels[filterStatus]}の注文はありません`}
@@ -134,24 +134,24 @@ export function AdminOrdersTable({
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div key={order.id} className="rounded-lg bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
+            <div key={order.id} className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-base text-gray-900">
+                  <p className="text-lg text-gray-900">
                     {new Date(order.createdAt).toLocaleDateString("ja-JP")}
                   </p>
-                  <p className="text-lg font-bold">
+                  <p className="text-xl font-bold text-gray-900">
                     ¥{order.totalJpy.toLocaleString()}
                   </p>
                   {order.user && (
-                    <p className="text-base text-gray-900">
+                    <p className="text-lg text-gray-900">
                       {order.user.displayName}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <span
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                    className={`rounded-full px-3 py-2 text-base font-medium ${
                       order.fulfillmentMethod === "pickup"
                         ? "bg-emerald-100 text-emerald-800"
                         : "bg-sky-100 text-sky-800"
@@ -164,9 +164,9 @@ export function AdminOrdersTable({
               </div>
 
               {/* 受取詳細 */}
-              <div className="mt-3 text-base text-gray-900">
+              <div className="mt-3 text-lg text-gray-900">
                 {order.fulfillmentMethod === "pickup" ? (
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <p>
                       受取日:{" "}
                       {order.pickupDate
@@ -196,7 +196,7 @@ export function AdminOrdersTable({
                 <select
                   value={order.status}
                   onChange={(e) => updateStatus(order.id, e.target.value)}
-                  className="rounded border px-3 py-2 text-base text-gray-900"
+                  className="rounded border px-4 py-3 text-lg text-gray-900"
                 >
                   {getStatusOptions(order.fulfillmentMethod).map((s) => (
                     <option key={s} value={s}>

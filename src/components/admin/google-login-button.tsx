@@ -16,8 +16,8 @@ function Loading() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
         <div className="animate-pulse space-y-4">
-          <div className="h-7 w-48 rounded bg-gray-200" />
-          <div className="h-12 rounded bg-gray-200" />
+          <div className="h-8 w-48 rounded bg-gray-200" />
+          <div className="h-14 rounded bg-gray-200" />
         </div>
       </div>
     </div>
@@ -42,17 +42,17 @@ function WebViewGuide() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm space-y-5 rounded-lg bg-white p-8 shadow">
-        <h1 className="text-xl font-bold">管理画面ログイン</h1>
+        <h1 className="text-2xl font-bold text-gray-900">管理画面ログイン</h1>
         <div className="rounded-lg bg-amber-50 p-4">
-          <p className="text-base font-medium text-amber-800">
+          <p className="text-lg font-medium text-amber-800">
             LINEアプリ内ではGoogleログインが使えません
           </p>
         </div>
         <div className="space-y-3">
-          <p className="text-base text-gray-700">
+          <p className="text-lg text-gray-900">
             以下の手順でログインしてください:
           </p>
-          <ol className="list-inside list-decimal space-y-2 text-base text-gray-700">
+          <ol className="list-inside list-decimal space-y-2 text-lg text-gray-900">
             <li>下のボタンでURLをコピー</li>
             <li>SafariまたはChromeを開く</li>
             <li>アドレスバーに貼り付けて移動</li>
@@ -60,7 +60,7 @@ function WebViewGuide() {
         </div>
         <button
           onClick={handleCopy}
-          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 py-4 text-base font-medium text-white hover:bg-blue-700"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 py-4 text-lg font-medium text-white hover:bg-blue-700"
         >
           {copied ? "コピーしました!" : "URLをコピー"}
         </button>
@@ -81,13 +81,13 @@ export function GoogleLoginButton() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm space-y-4 rounded-lg bg-white p-8 shadow">
-        <h1 className="text-xl font-bold">管理画面ログイン</h1>
+      <div className="w-full max-w-sm space-y-5 rounded-lg bg-white p-8 shadow">
+        <h1 className="text-2xl font-bold text-gray-900">管理画面ログイン</h1>
         <button
           onClick={() => signIn("google", { callbackUrl: "/admin/orders" })}
-          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded border border-gray-300 bg-white py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+          className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white py-4 text-lg font-medium text-gray-900 hover:bg-gray-50"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <svg className="h-6 w-6" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
               fill="#4285F4"
