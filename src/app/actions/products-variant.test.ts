@@ -76,14 +76,14 @@ describe("createProductWithVariantsAction", () => {
     expect(result).toEqual({ success: false, error: "管理者認証が必要です" });
   });
 
-  // G2: 正常作成
-  it("商品とバリエーションを正常に作成する", async () => {
+  // G2: 正常作成（戻り値にvariants含む）
+  it("商品とバリエーションを正常に作成し、variantsを返す", async () => {
     setupAdmin();
     mockCreateProduct.mockResolvedValue({
       id: "p1",
       name: "早生みかん",
     } as never);
-    mockCreateVariant.mockResolvedValue({ id: "v1" } as never);
+    mockCreateVariant.mockResolvedValue({ id: "v1", label: "3kg" } as never);
 
     const result = await createProductWithVariantsAction(
       { name: "早生みかん", stockKg: 100 },
@@ -93,6 +93,11 @@ describe("createProductWithVariantsAction", () => {
     expect(result.success).toBe(true);
     expect(mockCreateProduct).toHaveBeenCalled();
     expect(mockCreateVariant).toHaveBeenCalledTimes(1);
+    expect(result).toHaveProperty("variants");
+    if (result.success) {
+      expect(result.variants).toHaveLength(1);
+      expect(result.variants![0]).toMatchObject({ id: "v1", label: "3kg" });
+    }
   });
 });
 
