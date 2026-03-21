@@ -61,7 +61,7 @@ describe("deductStockKg", () => {
 
   // C1: 在庫十分 → 減算成功、返り値あり
   it("在庫十分で減算成功し、返り値を返す", async () => {
-    const updated = { id: "p1", stockKg: "44.000" };
+    const updated = { id: "p1", stockKg: 44 };
     mockReturning.mockResolvedValue([updated]);
 
     const result = await deductStockKg("p1", 6);
@@ -81,7 +81,7 @@ describe("deductStockKg", () => {
 
   // C3: 在庫ぴったり → 減算成功
   it("在庫ぴったりで減算成功する（境界値）", async () => {
-    const updated = { id: "p1", stockKg: "0.000" };
+    const updated = { id: "p1", stockKg: 0 };
     mockReturning.mockResolvedValue([updated]);
 
     const result = await deductStockKg("p1", 50);
@@ -117,7 +117,7 @@ describe("getAvailableProductsWithVariants", () => {
       {
         id: "p1",
         name: "早生みかん",
-        stockKg: "100.000",
+        stockKg: 100,
         isAvailable: true,
         variants: [
           { id: "v1", label: "3kg", weightKg: "3.000", priceJpy: 1800, isAvailable: true },
@@ -163,7 +163,7 @@ describe("getAvailableProductsWithVariants", () => {
       {
         id: "p1",
         name: "早生みかん",
-        stockKg: "100.000",
+        stockKg: 100,
         isAvailable: true,
         variants: [
           { id: "v1", label: "3kg", isAvailable: true },
@@ -172,7 +172,7 @@ describe("getAvailableProductsWithVariants", () => {
       {
         id: "p2",
         name: "不知火",
-        stockKg: "50.000",
+        stockKg: 50,
         isAvailable: true,
         variants: [], // DB側でフィルタ済み → 空配列
       },

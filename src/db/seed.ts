@@ -9,7 +9,7 @@ const db = drizzle(client);
 const seedProducts = [
   {
     name: "早生みかん",
-    stockKg: "100",
+    stockKg: 100,
     description: "甘みと酸味のバランスが良い早生みかん",
     isAvailable: true,
     // 旧カラム（まだスキーマに残っている）
@@ -33,7 +33,7 @@ const seedProducts = [
   },
   {
     name: "不知火",
-    stockKg: "50",
+    stockKg: 50,
     description: "デコポンの品種名。甘みが強くジューシー",
     isAvailable: true,
     variety: "不知火",
@@ -55,7 +55,7 @@ const seedProducts = [
   },
   {
     name: "寿太郎",
-    stockKg: "30",
+    stockKg: 30,
     description: "濃厚な味わいの高級みかん",
     isAvailable: true,
     variety: "寿太郎",
@@ -70,7 +70,7 @@ const seedProducts = [
   },
   {
     name: "青島みかん",
-    stockKg: "80",
+    stockKg: 80,
     description: "貯蔵熟成で甘みが増す晩生みかん",
     isAvailable: false,
     variety: "青島",

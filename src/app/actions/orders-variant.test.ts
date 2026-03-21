@@ -88,7 +88,7 @@ function makeCartItem(overrides: Record<string, unknown> = {}) {
     productName: "早生みかん",
     productImageUrl: null,
     productIsAvailable: true,
-    stockKg: "50.000",
+    stockKg: 50,
     label: "3kg",
     weightKg: "3.000",
     priceJpy: 1800,
@@ -206,8 +206,8 @@ describe("createOrderByVariant", () => {
   it("同一商品の合計消費kgが在庫を超過でエラー", async () => {
     mockGetAuth.mockResolvedValue(mockUser);
     mockGetCartWithVariants.mockResolvedValue([
-      makeCartItem({ variantId: "v1", productId: "p1", weightKg: "3.000", quantity: 2, stockKg: "10.000" }),
-      makeCartItem({ variantId: "v2", productId: "p1", weightKg: "5.000", quantity: 1, stockKg: "10.000" }),
+      makeCartItem({ variantId: "v1", productId: "p1", weightKg: "3.000", quantity: 2, stockKg: 10 }),
+      makeCartItem({ variantId: "v2", productId: "p1", weightKg: "5.000", quantity: 1, stockKg: 10 }),
     ]);
     // 個別: 6kg, 5kg → 合計11kg > 在庫10kg
     mockCalcConsumption
@@ -224,8 +224,8 @@ describe("createOrderByVariant", () => {
   it("異なる商品のバリエーションは独立して在庫チェックする", async () => {
     mockGetAuth.mockResolvedValue(mockUser);
     mockGetCartWithVariants.mockResolvedValue([
-      makeCartItem({ variantId: "v1", productId: "p1", stockKg: "10.000", quantity: 2, weightKg: "3.000" }),
-      makeCartItem({ variantId: "v3", productId: "p2", stockKg: "20.000", quantity: 1, weightKg: "5.000" }),
+      makeCartItem({ variantId: "v1", productId: "p1", stockKg: 10, quantity: 2, weightKg: "3.000" }),
+      makeCartItem({ variantId: "v3", productId: "p2", stockKg: 20, quantity: 1, weightKg: "5.000" }),
     ]);
     mockCalcConsumption
       .mockReturnValueOnce(6)  // p1: 3kg×2 = 6 ≤ 10

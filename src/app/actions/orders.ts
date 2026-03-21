@@ -62,7 +62,7 @@ export async function createOrderByVariant(
       const consumption = calcStockConsumptionKg(item.quantity, item.weightKg);
       const current = consumptionByProduct.get(item.productId) ?? 0;
       consumptionByProduct.set(item.productId, current + consumption);
-      stockByProduct.set(item.productId, Number(item.stockKg));
+      stockByProduct.set(item.productId, item.stockKg);
     }
     for (const [productId, totalKg] of consumptionByProduct) {
       const stockKg = stockByProduct.get(productId) ?? 0;
@@ -87,7 +87,7 @@ export async function createOrderByVariant(
           .where(
             and(
               eq(products.id, productId),
-              gte(products.stockKg, String(amountKg))
+              gte(products.stockKg, amountKg)
             )
           )
           .returning();

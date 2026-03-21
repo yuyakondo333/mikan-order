@@ -65,9 +65,7 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   stock: integer("stock").default(0).notNull(),
   stockUnit: text("stock_unit").default("kg").notNull(),
-  stockKg: numeric("stock_kg", { precision: 10, scale: 3 })
-    .default("0")
-    .notNull(),
+  stockKg: integer("stock_kg").default(0).notNull(),
   isAvailable: boolean("is_available").default(true).notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
