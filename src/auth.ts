@@ -38,8 +38,11 @@ export const authConfig = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        return !!adminEmail && profile?.email === adminEmail;
+        const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean);
+        return adminEmails.length > 0 && adminEmails.includes(profile?.email ?? "");
       }
       return true;
     },
