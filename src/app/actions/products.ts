@@ -78,16 +78,18 @@ export async function createProductWithVariantsAction(
       isAvailable: productData.isAvailable,
     });
 
-    for (const v of variants) {
-      await createVariant({
-        productId: product.id,
-        ...v,
-      });
-    }
+    const createdVariants = await Promise.all(
+      variants.map((v) =>
+        createVariant({
+          productId: product.id,
+          ...v,
+        })
+      )
+    );
 
     revalidatePath("/admin/products");
     revalidatePath("/products");
-    return { success: true, product };
+    return { success: true, product, variants: createdVariants };
   } catch (e) {
     console.error("Failed to create product with variants:", e);
     return { success: false, error: "商品の作成に失敗しました" };

@@ -97,9 +97,17 @@ export function AdminProductsManager({
           isGiftOnly: v.isGiftOnly,
         }))
       );
-      if (result.success) {
-        // ページリロードでデータ取得し直し
-        window.location.reload();
+      if (result.success && result.product) {
+        const newProduct: ProductWithVariants = {
+          ...result.product,
+          stockKg: Number(stockKg),
+          imageUrl: null,
+          isAvailable,
+          description: description || null,
+          variants: result.variants ?? [],
+        };
+        setProducts((prev) => [...prev, newProduct]);
+        resetForm();
       }
     } finally {
       setSubmitting(false);
@@ -177,8 +185,14 @@ export function AdminProductsManager({
         priceJpy: Number(newVariant.priceJpy),
         isGiftOnly: newVariant.isGiftOnly,
       });
-      if (result.success) {
-        window.location.reload();
+      if (result.success && result.variant) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === addVariantTarget
+              ? { ...p, variants: [...p.variants, result.variant!] }
+              : p
+          )
+        );
       }
     } finally {
       setAddingVariant(false);
