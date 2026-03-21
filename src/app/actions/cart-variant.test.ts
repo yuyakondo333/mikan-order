@@ -73,7 +73,7 @@ const mockVariant = {
 const mockProduct = {
   id: "p1",
   name: "早生みかん",
-  stockKg: "50.000",
+  stockKg: 50,
   isAvailable: true,
   imageUrl: null,
   description: null,
@@ -177,7 +177,7 @@ describe("addToCartByVariant", () => {
   it("在庫十分で成功する", async () => {
     setupAuth();
     setupVariant();
-    setupProduct({ stockKg: "50.000" });
+    setupProduct({ stockKg: 50 });
     mockGetCartItemByVariant.mockResolvedValue(undefined);
     mockCalcConsumption.mockReturnValue(3);
     mockUpsertCartItemByVariant.mockResolvedValue(undefined);
@@ -197,7 +197,7 @@ describe("addToCartByVariant", () => {
   it("在庫不足でエラーを返す", async () => {
     setupAuth();
     setupVariant({ weightKg: "10.000" });
-    setupProduct({ stockKg: "5.000" });
+    setupProduct({ stockKg: 5 });
     mockGetCartItemByVariant.mockResolvedValue(undefined);
     mockCalcConsumption.mockReturnValue(10);
 
@@ -210,7 +210,7 @@ describe("addToCartByVariant", () => {
   it("既存カートアイテムと合算して在庫チェックする", async () => {
     setupAuth();
     setupVariant();
-    setupProduct({ stockKg: "50.000" });
+    setupProduct({ stockKg: 50 });
     mockGetCartItemByVariant.mockResolvedValue({
       id: "ci-1",
       userId: "user-1",
@@ -250,7 +250,7 @@ describe("addToCartByVariant", () => {
   it("同一商品の別バリエーションは別行でカートに入る", async () => {
     setupAuth();
     setupVariant({ id: "v2", productId: "p1", label: "5kg", weightKg: "5.000" });
-    setupProduct({ stockKg: "50.000" });
+    setupProduct({ stockKg: 50 });
     mockGetCartItemByVariant.mockResolvedValue(undefined); // v2 は未登録
     mockCalcConsumption.mockReturnValue(5);
     mockUpsertCartItemByVariant.mockResolvedValue(undefined);
@@ -270,7 +270,7 @@ describe("addToCartByVariant", () => {
   it("productId 冗長カラムが正しくセットされる", async () => {
     setupAuth();
     setupVariant({ productId: "p1" });
-    setupProduct({ id: "p1", stockKg: "50.000" });
+    setupProduct({ id: "p1", stockKg: 50 });
     mockGetCartItemByVariant.mockResolvedValue(undefined);
     mockCalcConsumption.mockReturnValue(3);
     mockUpsertCartItemByVariant.mockResolvedValue(undefined);
@@ -299,7 +299,7 @@ describe("updateCartItemByVariant", () => {
   it("在庫十分で数量変更できる", async () => {
     setupAuth();
     setupVariant();
-    setupProduct({ stockKg: "50.000" });
+    setupProduct({ stockKg: 50 });
     mockCalcConsumption.mockReturnValue(6);
     mockUpsertCartItemByVariant.mockResolvedValue(undefined);
 
@@ -312,7 +312,7 @@ describe("updateCartItemByVariant", () => {
   it("在庫不足でエラーを返す", async () => {
     setupAuth();
     setupVariant({ weightKg: "10.000" });
-    setupProduct({ stockKg: "5.000" });
+    setupProduct({ stockKg: 5 });
     mockCalcConsumption.mockReturnValue(100);
 
     const result = await updateCartItemByVariant("v1", 10);

@@ -168,7 +168,7 @@ export function LegalInfoEditor({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-blue-600 px-6 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded bg-blue-600 px-6 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "保存中..." : "保存"}
         </button>

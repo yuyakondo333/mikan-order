@@ -67,7 +67,7 @@ export async function addToCartByVariant(
   const newQty = (existingItem?.quantity ?? 0) + quantity;
 
   const required = calcStockConsumptionKg(newQty, variant.weightKg);
-  if (required > Number(product.stockKg)) {
+  if (required > product.stockKg) {
     return { success: false, error: "在庫が不足しています" };
   }
 
@@ -109,7 +109,7 @@ export async function updateCartItemByVariant(
   }
 
   const required = calcStockConsumptionKg(quantity, variant.weightKg);
-  if (required > Number(product.stockKg)) {
+  if (required > product.stockKg) {
     return { success: false, error: "在庫が不足しています" };
   }
 

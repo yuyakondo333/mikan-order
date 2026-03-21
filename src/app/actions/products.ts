@@ -98,7 +98,7 @@ export async function updateProductV2Action(
   id: string,
   data: Partial<{
     name: string;
-    stockKg: string;
+    stockKg: number;
     description: string | null;
     isAvailable: boolean;
   }>

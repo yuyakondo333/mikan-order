@@ -1,7 +1,7 @@
 export type Product = {
   id: string;
   name: string;
-  stockKg: string;
+  stockKg: number;
   imageUrl: string | null;
   isAvailable: boolean;
   description: string | null;
@@ -34,7 +34,7 @@ export type CartItemWithVariant = {
   productName: string;
   productImageUrl: string | null;
   productIsAvailable: boolean;
-  stockKg: string;
+  stockKg: number;
   label: string;
   weightKg: string;
   priceJpy: number;

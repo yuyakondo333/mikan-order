@@ -108,14 +108,14 @@ describe("updateProductV2Action", () => {
 
     const result = await updateProductV2Action("p1", {
       name: "新名前",
-      stockKg: "50",
+      stockKg: 50,
       isAvailable: false,
     });
 
     expect(result).toEqual({ success: true });
     expect(mockUpdateProduct).toHaveBeenCalledWith("p1", {
       name: "新名前",
-      stockKg: "50",
+      stockKg: 50,
       isAvailable: false,
     });
   });

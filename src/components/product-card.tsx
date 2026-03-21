@@ -8,15 +8,14 @@ type ProductCardProps = {
   onAddToCart: (variantId: string, quantity: number, productName: string) => void;
 };
 
-function calcMaxQuantity(stockKg: string, weightKg: string): number {
-  const stock = Number(stockKg);
+function calcMaxQuantity(stockKg: number, weightKg: string): number {
   const weight = Number(weightKg);
   if (weight <= 0) return 0;
-  return Math.floor(stock / weight);
+  return Math.floor(stockKg / weight);
 }
 
-function isVariantAvailable(stockKg: string, weightKg: string): boolean {
-  return Number(weightKg) <= Number(stockKg);
+function isVariantAvailable(stockKg: number, weightKg: string): boolean {
+  return Number(weightKg) <= stockKg;
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
@@ -75,7 +74,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                   v.id === selectedVariantId
                     ? "border-orange-500 bg-orange-50 text-orange-700"
                     : available
-                      ? "border-gray-300 text-gray-700 hover:border-orange-300"
+                      ? "cursor-pointer border-gray-300 text-gray-700 hover:border-orange-300"
                       : "border-gray-200 text-gray-400 line-through"
                 }`}
               >
@@ -108,7 +107,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="h-8 w-8 rounded-full border text-center text-gray-900 disabled:opacity-30"
+              className="h-8 w-8 cursor-pointer rounded-full border text-center text-gray-900 disabled:opacity-30"
             >
               -
             </button>
@@ -118,7 +117,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                 setQuantity((q) => Math.min(maxQuantity, q + 1))
               }
               disabled={quantity >= maxQuantity}
-              className="h-8 w-8 rounded-full border text-center text-gray-900 disabled:opacity-30"
+              className="h-8 w-8 cursor-pointer rounded-full border text-center text-gray-900 disabled:opacity-30"
             >
               +
             </button>
@@ -129,7 +128,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                   setQuantity(1);
                 }
               }}
-              className="rounded-full bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+              className="cursor-pointer rounded-full bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
             >
               カートに追加
             </button>

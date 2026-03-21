@@ -96,7 +96,7 @@ export async function deductStockKg(productId: string, amountKg: number) {
     .where(
       and(
         eq(products.id, productId),
-        gte(products.stockKg, String(amountKg))
+        gte(products.stockKg, amountKg)
       )
     )
     .returning();

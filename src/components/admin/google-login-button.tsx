@@ -9,7 +9,7 @@ export function GoogleLoginButton() {
         <h1 className="text-xl font-bold">管理画面ログイン</h1>
         <button
           onClick={() => signIn("google", { callbackUrl: "/admin/orders" })}
-          className="flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded border border-gray-300 bg-white py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path

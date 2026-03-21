@@ -102,7 +102,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
 
       <button
         type="submit"
-        className="mt-6 w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600"
+        className="mt-6 w-full cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600"
       >
         確認画面へ進む
       </button>

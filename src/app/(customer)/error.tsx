@@ -15,7 +15,7 @@ export default function CustomerError({
         </p>
         <button
           onClick={() => reset()}
-          className="mt-4 rounded-full bg-orange-500 px-6 py-2 text-sm font-medium text-white hover:bg-orange-600"
+          className="mt-4 cursor-pointer rounded-full bg-orange-500 px-6 py-2 text-sm font-medium text-white hover:bg-orange-600"
         >
           再試行
         </button>
