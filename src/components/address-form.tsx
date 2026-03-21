@@ -68,7 +68,7 @@ export function AddressForm({ savedAddress }: Props) {
       <div className="mb-4 flex gap-3">
         <button
           onClick={() => setMethod("pickup")}
-          className={`flex-1 rounded-lg border-2 py-3 text-center font-medium transition ${
+          className={`flex-1 cursor-pointer rounded-lg border-2 py-3 text-center font-medium transition ${
             method === "pickup"
               ? "border-orange-500 bg-orange-500 text-white"
               : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
@@ -78,7 +78,7 @@ export function AddressForm({ savedAddress }: Props) {
         </button>
         <button
           onClick={() => setMethod("delivery")}
-          className={`flex-1 rounded-lg border-2 py-3 text-center font-medium transition ${
+          className={`flex-1 cursor-pointer rounded-lg border-2 py-3 text-center font-medium transition ${
             method === "delivery"
               ? "border-orange-500 bg-orange-500 text-white"
               : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
@@ -166,7 +166,7 @@ export function AddressForm({ savedAddress }: Props) {
         <button
           onClick={handlePickupProceed}
           disabled={!isPickupValid}
-          className="mt-6 w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 w-full cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           確認画面へ進む
         </button>

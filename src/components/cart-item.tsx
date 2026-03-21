@@ -30,20 +30,20 @@ export function CartItem({
         <button
           onClick={() => onUpdateQuantity(id, quantity - 1)}
           disabled={quantity <= 1}
-          className="h-8 w-8 rounded-full border text-center disabled:opacity-30"
+          className="h-8 w-8 cursor-pointer rounded-full border text-center disabled:opacity-30"
         >
           -
         </button>
         <span className="w-6 text-center text-gray-900">{quantity}</span>
         <button
           onClick={() => onUpdateQuantity(id, quantity + 1)}
-          className="h-8 w-8 rounded-full border text-center"
+          className="h-8 w-8 cursor-pointer rounded-full border text-center"
         >
           +
         </button>
         <button
           onClick={() => onRemove(id)}
-          className="ml-2 text-sm text-red-500 hover:text-red-700"
+          className="ml-2 cursor-pointer text-sm text-red-500 hover:text-red-700"
         >
           削除
         </button>

@@ -141,14 +141,14 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
         <button
           onClick={handleSubmit}
           disabled={isPending}
-          className="w-full rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+          className="w-full cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:opacity-50"
         >
           {isPending ? "送信中..." : "注文を確定する"}
         </button>
         <button
           onClick={() => router.back()}
           disabled={isPending}
-          className="w-full rounded-full border border-gray-300 bg-white py-3 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="w-full cursor-pointer rounded-full border border-gray-300 bg-white py-3 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           戻る
         </button>

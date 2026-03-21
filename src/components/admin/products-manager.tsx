@@ -109,16 +109,17 @@ export function AdminProductsManager({
   async function handleUpdateProduct(productId: string) {
     setSubmitting(true);
     try {
+      const stockKgNum = Number(stockKg);
       await updateProductV2Action(productId, {
         name,
-        stockKg,
+        stockKg: stockKgNum,
         description: description || null,
         isAvailable,
       });
       setProducts((prev) =>
         prev.map((p) =>
           p.id === productId
-            ? { ...p, name, stockKg, description: description || null, isAvailable }
+            ? { ...p, name, stockKg: stockKgNum, description: description || null, isAvailable }
             : p
         )
       );
@@ -305,7 +306,7 @@ export function AdminProductsManager({
   function openEditForm(product: ProductWithVariants) {
     setEditingId(product.id);
     setName(product.name);
-    setStockKg(product.stockKg);
+    setStockKg(String(product.stockKg));
     setDescription(product.description ?? "");
     setIsAvailable(product.isAvailable);
     setShowForm(true);
@@ -317,7 +318,7 @@ export function AdminProductsManager({
         <h1 className="text-2xl font-bold text-gray-900">商品管理</h1>
         <button
           onClick={openAddForm}
-          className="rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600"
+          className="cursor-pointer rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600"
         >
           + 商品を追加
         </button>
@@ -357,7 +358,7 @@ export function AdminProductsManager({
               </label>
               <input
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={stockKg}
                 onChange={(e) => setStockKg(e.target.value)}
@@ -446,7 +447,7 @@ export function AdminProductsManager({
                       onClick={() =>
                         setVariants(variants.filter((_, j) => j !== i))
                       }
-                      className="text-base text-red-600"
+                      className="cursor-pointer text-base text-red-600"
                     >
                       削除
                     </button>
@@ -456,7 +457,7 @@ export function AdminProductsManager({
               <button
                 type="button"
                 onClick={() => setVariants([...variants, { ...emptyVariant }])}
-                className="text-base text-orange-600 hover:underline"
+                className="cursor-pointer text-base text-orange-600 hover:underline"
               >
                 + バリエーション追加
               </button>
@@ -467,14 +468,14 @@ export function AdminProductsManager({
             <button
               type="submit"
               disabled={submitting}
-              className="rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+              className="cursor-pointer rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600 disabled:opacity-50"
             >
               {submitting ? "保存中..." : editingId ? "更新する" : "追加する"}
             </button>
             <button
               type="button"
               onClick={resetForm}
-              className="rounded bg-gray-200 px-5 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-300"
+              className="cursor-pointer rounded bg-gray-200 px-5 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-300"
             >
               キャンセル
             </button>
@@ -501,7 +502,7 @@ export function AdminProductsManager({
                       product.isAvailable
                     )
                   }
-                  className={`rounded-full px-3 py-1.5 text-sm font-bold ${
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-sm font-bold ${
                     product.isAvailable
                       ? "bg-green-100 text-green-800"
                       : "bg-gray-200 text-gray-700"
@@ -511,10 +512,10 @@ export function AdminProductsManager({
                 </button>
                 <span className="text-base font-bold text-gray-700">
                   在庫{" "}
-                  {Number(product.stockKg) === 0 ? (
+                  {product.stockKg === 0 ? (
                     <span className="font-medium text-red-600">売り切れ</span>
                   ) : (
-                    <span className={`font-medium ${Number(product.stockKg) <= 5 ? "text-red-600" : "text-gray-900"}`}>
+                    <span className={`font-medium ${product.stockKg <= 5 ? "text-red-600" : "text-gray-900"}`}>
                       {product.stockKg}kg
                     </span>
                   )}
@@ -537,7 +538,7 @@ export function AdminProductsManager({
                       expandedProduct === product.id ? null : product.id
                     )
                   }
-                  className="text-sm text-orange-600 hover:underline"
+                  className="cursor-pointer text-sm text-orange-600 hover:underline"
                 >
                   {expandedProduct === product.id
                     ? "バリエーションを閉じる"
@@ -554,14 +555,14 @@ export function AdminProductsManager({
                         <div className="flex gap-2">
                           <button
                             onClick={() => resetVariantEdits(product.id)}
-                            className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="cursor-pointer rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             元に戻す
                           </button>
                           <button
                             onClick={() => handleSaveAllVariants(product.id)}
                             disabled={savingVariants}
-                            className="rounded bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                            className="cursor-pointer rounded bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
                           >
                             {savingVariants ? "保存中..." : "保存"}
                           </button>
@@ -630,7 +631,7 @@ export function AdminProductsManager({
                               <td className="px-4 py-3 text-right">
                                 <button
                                   onClick={() => handleDeleteVariant(v.id, product.id)}
-                                  className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                                  className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                                 >
                                   削除
                                 </button>
@@ -642,7 +643,7 @@ export function AdminProductsManager({
                     </table>
                     <button
                       onClick={() => openAddVariantModal(product.id)}
-                      className="mt-3 text-sm font-medium text-orange-600 hover:underline"
+                      className="mt-3 cursor-pointer text-sm font-medium text-orange-600 hover:underline"
                     >
                       + バリエーション追加
                     </button>
@@ -653,13 +654,13 @@ export function AdminProductsManager({
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={() => openEditForm(product)}
-                  className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+                  className="cursor-pointer rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
                 >
                   編集
                 </button>
                 <button
                   onClick={() => handleDeleteProduct(product.id)}
-                  className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                  className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                 >
                   削除
                 </button>

@@ -41,13 +41,13 @@ export default async function CompletePage({
         <div className="space-y-3">
           <Link
             href="/orders"
-            className="block rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600"
+            className="block cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600"
           >
             注文履歴を見る
           </Link>
           <Link
             href="/products"
-            className="block rounded-full border border-gray-300 bg-white py-3 font-medium text-gray-700 hover:bg-gray-50"
+            className="block cursor-pointer rounded-full border border-gray-300 bg-white py-3 font-medium text-gray-700 hover:bg-gray-50"
           >
             トップに戻る
           </Link>
