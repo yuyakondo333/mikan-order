@@ -197,10 +197,10 @@ export function ProductCard({
   return (
     <div className="rounded-lg bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-bold text-gray-900">{product.name}</h2>
+        <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
         <button
           onClick={handleToggleAvailability}
-          className={`cursor-pointer rounded-full px-3 py-1.5 text-sm font-bold ${
+          className={`cursor-pointer rounded-full px-4 py-2 text-base font-bold ${
             product.isAvailable
               ? "bg-green-100 text-green-800"
               : "bg-gray-200 text-gray-700"
@@ -208,7 +208,7 @@ export function ProductCard({
         >
           {product.isAvailable ? "販売中" : "非公開"}
         </button>
-        <span className="text-base font-bold text-gray-700">
+        <span className="text-lg font-bold text-gray-900">
           在庫{" "}
           {product.stockKg === 0 ? (
             <span className="font-medium text-red-600">売り切れ</span>
@@ -218,21 +218,21 @@ export function ProductCard({
             </span>
           )}
         </span>
-        <span className="text-base font-bold text-gray-700">
+        <span className="text-lg font-bold text-gray-900">
           バリエーション <span className="text-gray-900">{product.variants.length}件</span>
         </span>
       </div>
       {product.description && (
-        <p className="mt-3 text-base leading-relaxed text-gray-700">
+        <p className="mt-3 text-lg leading-relaxed text-gray-900">
           {product.description}
         </p>
       )}
 
       {/* バリエーション一覧（展開/折りたたみ） */}
-      <div className="mt-2">
+      <div className="mt-3">
         <button
           onClick={onToggleExpand}
-          className="cursor-pointer text-sm text-orange-600 hover:underline"
+          className="cursor-pointer rounded-md px-3 py-2 text-base font-medium text-orange-600 hover:bg-orange-50"
         >
           {expanded ? "バリエーションを閉じる" : "バリエーションを表示"}
         </button>
@@ -240,30 +240,31 @@ export function ProductCard({
           <div className="mt-2 border-t pt-3">
             {/* Shopify風 Saveバー */}
             {getDirtyVariants().length > 0 && (
-              <div className="mb-3 flex items-center justify-between rounded-lg bg-orange-50 px-4 py-3">
-                <span className="text-base font-medium text-orange-800">
+              <div className="mb-3 flex flex-col gap-2 rounded-lg bg-orange-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-lg font-medium text-orange-800">
                   未保存の変更があります
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={resetVariantEdits}
-                    className="cursor-pointer rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="cursor-pointer rounded border border-gray-300 bg-white px-5 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-50"
                   >
                     元に戻す
                   </button>
                   <button
                     onClick={handleSaveAllVariants}
                     disabled={savingVariants}
-                    className="cursor-pointer rounded bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                    className="cursor-pointer rounded bg-orange-500 px-6 py-2.5 text-base font-medium text-white hover:bg-orange-600 disabled:opacity-50"
                   >
                     {savingVariants ? "保存中..." : "保存"}
                   </button>
                 </div>
               </div>
             )}
-            <table className="w-full border-collapse overflow-hidden rounded-lg border border-gray-200 text-base">
+            <div className="-mx-1 overflow-x-auto px-1">
+            <table className="w-full min-w-[640px] border-collapse overflow-hidden rounded-lg border border-gray-200 text-base">
               <thead>
-                <tr className="bg-gray-100 text-left text-base font-semibold text-gray-800">
+                <tr className="bg-gray-100 text-left text-base font-semibold text-gray-900">
                   <th className="px-4 py-3">ラベル</th>
                   <th className="px-4 py-3">価格</th>
                   <th className="px-4 py-3">区分</th>
@@ -284,38 +285,38 @@ export function ProductCard({
                         <input
                           value={edit.label}
                           onChange={(e) => updateVariantField(v.id, v, "label", e.target.value)}
-                          className={`w-full rounded border bg-transparent px-3 py-2 text-base text-gray-900 focus:bg-white focus:outline-none ${labelDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
+                          className={`w-full rounded border bg-transparent px-3 py-2.5 text-base text-gray-900 focus:bg-white focus:outline-none ${labelDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
                         />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <span className="text-base text-gray-700">¥</span>
+                          <span className="text-base text-gray-900">¥</span>
                           <input
                             type="number"
                             value={edit.priceJpy}
                             onChange={(e) => updateVariantField(v.id, v, "priceJpy", e.target.value)}
-                            className={`w-full rounded border bg-transparent px-3 py-2 text-base text-gray-900 focus:bg-white focus:outline-none ${priceDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
+                            className={`w-full rounded border bg-transparent px-3 py-2.5 text-base text-gray-900 focus:bg-white focus:outline-none ${priceDirty ? "border-orange-400 bg-orange-50" : "border-gray-200 focus:border-orange-400"}`}
                           />
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <label className={`flex items-center gap-2 rounded px-2 py-1 text-base text-gray-800 ${giftDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
+                        <label className={`flex items-center gap-2 rounded px-2 py-1.5 text-base text-gray-900 ${giftDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
                           <input
                             type="checkbox"
                             checked={edit.isGiftOnly}
                             onChange={(e) => updateVariantField(v.id, v, "isGiftOnly", e.target.checked)}
-                            className="h-5 w-5 accent-gray-700"
+                            className="h-6 w-6 accent-gray-700"
                           />
                           贈答用
                         </label>
                       </td>
                       <td className="px-4 py-3">
-                        <label className={`flex items-center gap-2 rounded px-2 py-1 text-base text-gray-800 ${availDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
+                        <label className={`flex items-center gap-2 rounded px-2 py-1.5 text-base text-gray-900 ${availDirty ? "bg-orange-50 ring-1 ring-orange-400" : ""}`}>
                           <input
                             type="checkbox"
                             checked={edit.isAvailable}
                             onChange={(e) => updateVariantField(v.id, v, "isAvailable", e.target.checked)}
-                            className="h-5 w-5 accent-gray-700"
+                            className="h-6 w-6 accent-gray-700"
                           />
                           公開
                         </label>
@@ -323,7 +324,7 @@ export function ProductCard({
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setDeleteVariantTarget({ variantId: v.id })}
-                          className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+                          className="cursor-pointer rounded border border-red-300 px-5 py-2.5 text-base font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                         >
                           削除
                         </button>
@@ -333,9 +334,10 @@ export function ProductCard({
                 })}
               </tbody>
             </table>
+            </div>
             <button
               onClick={openAddVariantModal}
-              className="mt-3 cursor-pointer text-sm font-medium text-orange-600 hover:underline"
+              className="mt-3 cursor-pointer rounded-md px-3 py-2 text-base font-medium text-orange-600 hover:bg-orange-50"
             >
               + バリエーション追加
             </button>
@@ -346,13 +348,13 @@ export function ProductCard({
       <div className="mt-4 flex gap-3">
         <button
           onClick={onEdit}
-          className="cursor-pointer rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+          className="cursor-pointer rounded border border-gray-300 bg-white px-5 py-3 text-base font-medium text-gray-900 hover:bg-gray-50"
         >
           編集
         </button>
         <button
           onClick={() => setDeleteProductTarget(true)}
-          className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
+          className="cursor-pointer rounded border border-red-300 px-5 py-3 text-base font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
         >
           削除
         </button>
@@ -371,20 +373,20 @@ export function ProductCard({
           </AlertDialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-base font-medium text-gray-900">
+              <label className="block text-lg font-medium text-gray-900">
                 ラベル *
               </label>
               <input
                 placeholder="例: 3kg"
                 value={newVariant.label}
                 onChange={(e) => setNewVariant({ ...newVariant, label: e.target.value })}
-                className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
+                className="mt-1 w-full rounded border p-3 text-lg text-gray-900"
                 autoFocus
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-base font-medium text-gray-900">
+                <label className="block text-lg font-medium text-gray-900">
                   重量 (kg) *
                 </label>
                 <input
@@ -393,11 +395,11 @@ export function ProductCard({
                   placeholder="3"
                   value={newVariant.weightKg}
                   onChange={(e) => setNewVariant({ ...newVariant, weightKg: e.target.value })}
-                  className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
+                  className="mt-1 w-full rounded border p-3 text-lg text-gray-900"
                 />
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-900">
+                <label className="block text-lg font-medium text-gray-900">
                   価格 (円) *
                 </label>
                 <input
@@ -405,16 +407,16 @@ export function ProductCard({
                   placeholder="1800"
                   value={newVariant.priceJpy}
                   onChange={(e) => setNewVariant({ ...newVariant, priceJpy: e.target.value })}
-                  className="mt-1 w-full rounded border p-2.5 text-base text-gray-900"
+                  className="mt-1 w-full rounded border p-3 text-lg text-gray-900"
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-base text-gray-900">
+            <label className="flex items-center gap-3 text-lg text-gray-900">
               <input
                 type="checkbox"
                 checked={newVariant.isGiftOnly}
                 onChange={(e) => setNewVariant({ ...newVariant, isGiftOnly: e.target.checked })}
-                className="h-5 w-5"
+                className="h-6 w-6"
               />
               贈答用
             </label>
@@ -449,7 +451,7 @@ export function ProductCard({
           <AlertDialogHeader>
             <AlertDialogTitle>商品を削除しますか？</AlertDialogTitle>
           </AlertDialogHeader>
-          <p className="text-base text-gray-700">
+          <p className="text-lg text-gray-900">
             この操作は取り消せません。商品に紐づくバリエーションもすべて削除されます。
           </p>
           <AlertDialogFooter>
@@ -475,7 +477,7 @@ export function ProductCard({
           <AlertDialogHeader>
             <AlertDialogTitle>バリエーションを削除しますか？</AlertDialogTitle>
           </AlertDialogHeader>
-          <p className="text-base text-gray-700">
+          <p className="text-lg text-gray-900">
             この操作は取り消せません。
           </p>
           <AlertDialogFooter>

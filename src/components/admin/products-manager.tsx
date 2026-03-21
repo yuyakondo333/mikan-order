@@ -61,7 +61,7 @@ export function AdminProductsManager({
         <h1 className="text-2xl font-bold text-gray-900">商品管理</h1>
         <button
           onClick={openAddForm}
-          className="cursor-pointer rounded bg-orange-500 px-5 py-2.5 text-base font-medium text-white hover:bg-orange-600"
+          className="cursor-pointer rounded bg-orange-500 px-6 py-3 text-lg font-medium text-white hover:bg-orange-600"
         >
           + 商品を追加
         </button>
@@ -77,7 +77,7 @@ export function AdminProductsManager({
       )}
 
       {products.length === 0 ? (
-        <p className="text-gray-900">商品はありません</p>
+        <p className="text-lg text-gray-900">商品はありません</p>
       ) : (
         <div className="space-y-4">
           {products.map((product) => (
