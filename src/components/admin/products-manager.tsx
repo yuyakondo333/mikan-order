@@ -52,6 +52,8 @@ export function AdminProductsManager({
   const [addingVariant, setAddingVariant] = useState(false);
   const [variantEdits, setVariantEdits] = useState<Record<string, VariantEdit>>({});
   const [savingVariants, setSavingVariants] = useState(false);
+  const [deleteProductTarget, setDeleteProductTarget] = useState<string | null>(null);
+  const [deleteVariantTarget, setDeleteVariantTarget] = useState<{ variantId: string; productId: string } | null>(null);
 
   function resetForm() {
     setShowForm(false);
@@ -131,11 +133,11 @@ export function AdminProductsManager({
   }
 
   async function handleDeleteProduct(productId: string) {
-    if (!confirm("この商品を削除しますか？")) return;
     const result = await deleteProductAction(productId);
     if (result.success) {
       setProducts((prev) => prev.filter((p) => p.id !== productId));
     }
+    setDeleteProductTarget(null);
   }
 
   async function handleToggleAvailability(
@@ -197,7 +199,6 @@ export function AdminProductsManager({
     variantId: string,
     productId: string
   ) {
-    if (!confirm("このバリエーションを削除しますか？")) return;
     const result = await deleteVariantAction(variantId, productId);
     if (!result.success) {
       alert(result.error);
@@ -213,6 +214,7 @@ export function AdminProductsManager({
         )
       );
     }
+    setDeleteVariantTarget(null);
   }
 
   function getVariantEdit(v: ProductVariant) {
@@ -616,7 +618,7 @@ export function AdminProductsManager({
                               </td>
                               <td className="px-4 py-3 text-right">
                                 <button
-                                  onClick={() => handleDeleteVariant(v.id, product.id)}
+                                  onClick={() => setDeleteVariantTarget({ variantId: v.id, productId: product.id })}
                                   className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                                 >
                                   削除
@@ -645,7 +647,7 @@ export function AdminProductsManager({
                   編集
                 </button>
                 <button
-                  onClick={() => handleDeleteProduct(product.id)}
+                  onClick={() => setDeleteProductTarget(product.id)}
                   className="cursor-pointer rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-all duration-200 hover:border-red-500 hover:bg-red-600 hover:text-white"
                 >
                   削除
@@ -739,6 +741,61 @@ export function AdminProductsManager({
               }
             >
               {addingVariant ? "追加中..." : "追加する"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 商品削除確認ダイアログ */}
+      <AlertDialog
+        open={!!deleteProductTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProductTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>商品を削除しますか？</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-base text-gray-700">
+            この操作は取り消せません。商品に紐づくバリエーションもすべて削除されます。
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteProductTarget && handleDeleteProduct(deleteProductTarget)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              削除する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* バリエーション削除確認ダイアログ */}
+      <AlertDialog
+        open={!!deleteVariantTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteVariantTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>バリエーションを削除しますか？</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-base text-gray-700">
+            この操作は取り消せません。
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                deleteVariantTarget &&
+                handleDeleteVariant(deleteVariantTarget.variantId, deleteVariantTarget.productId)
+              }
+              className="bg-red-600 hover:bg-red-700"
+            >
+              削除する
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
