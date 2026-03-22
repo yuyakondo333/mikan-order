@@ -223,7 +223,10 @@ export async function updateOrderStatusByVariantAction(
       }
     }
 
-    await updateOrderStatus(orderId, validatedStatus);
+    const updated = await updateOrderStatus(orderId, validatedStatus);
+    if (!updated) {
+      return { success: false, error: "注文が見つかりません" };
+    }
 
     // 発送完了 → LINE通知（delivery注文のみ）
     if (validatedStatus === "shipped") {

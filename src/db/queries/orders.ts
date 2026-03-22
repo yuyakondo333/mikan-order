@@ -78,9 +78,11 @@ export const getOrderDetailV2 = cache(async function getOrderDetailV2(id: string
 export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus
-) {
-  await db
+): Promise<{ id: string } | null> {
+  const [result] = await db
     .update(orders)
     .set({ status })
-    .where(eq(orders.id, orderId));
+    .where(eq(orders.id, orderId))
+    .returning({ id: orders.id });
+  return result ?? null;
 }
