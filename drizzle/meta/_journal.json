@@ -64,6 +64,13 @@
       "when": 1774177482921,
       "tag": "0008_vengeful_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774182876583,
+      "tag": "0009_lyrical_blue_shield",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,7 @@ export default async function AdminLayout({
             <AdminNavLink href="/admin/orders">注文管理</AdminNavLink>
             <AdminNavLink href="/admin/products">商品管理</AdminNavLink>
             <AdminNavLink href="/admin/legal">特商法表記</AdminNavLink>
+            <AdminNavLink href="/admin/payment">お支払い設定</AdminNavLink>
           </div>
         </nav>
       )}

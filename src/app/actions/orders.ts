@@ -16,6 +16,7 @@ import {
   sendOrderConfirmationWithPickup,
   sendOrderConfirmationWithBankTransfer,
 } from "@/lib/line";
+import { getPaymentSettings } from "@/db/queries/payment-settings";
 import { fulfillmentSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { verifyAdmin } from "@/lib/admin-auth";
@@ -150,9 +151,17 @@ export async function createOrderByVariant(
     // LINE通知
     try {
       if (orderData.fulfillmentMethod === "delivery") {
+        const ps = await getPaymentSettings();
         await sendOrderConfirmationWithBankTransfer(
           user.lineUserId,
-          totalJpy
+          totalJpy,
+          {
+            bankName: ps?.bankName ?? null,
+            branchName: ps?.branchName ?? null,
+            accountType: ps?.accountType ?? null,
+            accountNumber: ps?.accountNumber ?? null,
+            accountHolder: ps?.accountHolder ?? null,
+          }
         );
       } else if (orderData.fulfillmentMethod === "pickup") {
         const pickupDate = formatPickupDate(orderData.pickupDate);

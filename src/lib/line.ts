@@ -1,4 +1,5 @@
 import { messagingApi } from "@line/bot-sdk";
+import type { BankTransferInfo } from "@/types";
 
 const client = new messagingApi.MessagingApiClient({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN!,
@@ -48,10 +49,33 @@ export async function sendPickupReadyNotification({
   });
 }
 
+function hasBankTransferInfo(info: BankTransferInfo): boolean {
+  return !!(
+    info.bankName &&
+    info.branchName &&
+    info.accountType &&
+    info.accountNumber &&
+    info.accountHolder
+  );
+}
+
 export async function sendOrderConfirmationWithBankTransfer(
   lineUserId: string,
-  totalJpy: number
+  totalJpy: number,
+  bankInfo: BankTransferInfo
 ) {
+  const bankSection = hasBankTransferInfo(bankInfo)
+    ? [
+        "━━━ お振込先 ━━━",
+        `銀行名: ${bankInfo.bankName}`,
+        `支店名: ${bankInfo.branchName}`,
+        `口座種別: ${bankInfo.accountType}`,
+        `口座番号: ${bankInfo.accountNumber}`,
+        `口座名義: ${bankInfo.accountHolder}`,
+        "━━━━━━━━━━━━",
+      ]
+    : ["お振込先は別途ご連絡いたします。"];
+
   await client.pushMessage({
     to: lineUserId,
     messages: [
@@ -62,13 +86,7 @@ export async function sendOrderConfirmationWithBankTransfer(
           "",
           `合計金額: ¥${totalJpy.toLocaleString()}`,
           "",
-          "━━━ お振込先 ━━━",
-          "銀行名: ○○銀行",
-          "支店名: △△支店",
-          "口座種別: 普通",
-          "口座番号: 1234567",
-          "口座名義: ミカンノウエン",
-          "━━━━━━━━━━━━",
+          ...bankSection,
           "",
           "※ご入金確認後、準備を開始いたします。",
         ].join("\n"),
