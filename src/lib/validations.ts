@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+export const orderStatusSchema = z.enum([
+  "pending",
+  "awaiting_payment",
+  "payment_confirmed",
+  "preparing",
+  "ready",
+  "shipped",
+  "completed",
+  "cancelled",
+]);
+
 export const addressSchema = z.object({
   recipientName: z.string().min(1, "受取人名を入力してください"),
   postalCode: z
