@@ -13,6 +13,7 @@ import {
 } from "@/db/queries/products";
 import {
   sendPickupReadyNotification,
+  sendShippingNotification,
   sendOrderConfirmationWithPickup,
   sendOrderConfirmationWithBankTransfer,
 } from "@/lib/line";
@@ -216,6 +217,34 @@ export async function updateOrderStatusByVariantAction(
     }
 
     await updateOrderStatus(orderId, status);
+
+    // 発送完了 → LINE通知（delivery注文のみ）
+    if (status === "shipped") {
+      try {
+        const order = await getOrderWithUserAndItemsV2(orderId);
+        if (
+          order?.user?.lineUserId &&
+          order.fulfillmentMethod === "delivery"
+        ) {
+          const itemsSummary = order.items
+            .map(
+              (item) =>
+                `${item.productName} ${item.label} × ${item.quantity}`
+            )
+            .join("、");
+
+          await sendShippingNotification({
+            lineUserId: order.user.lineUserId,
+            itemsSummary,
+          });
+        }
+      } catch (notifyError) {
+        console.error(
+          "Failed to send shipping notification:",
+          notifyError
+        );
+      }
+    }
 
     // 準備完了 → LINE通知（バリエーションラベル付き）
     if (status === "ready") {
