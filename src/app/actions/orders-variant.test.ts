@@ -360,7 +360,7 @@ describe("createOrderByVariant", () => {
     mockGetAuth.mockResolvedValue(mockUser);
     mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
     mockCalcConsumption.mockReturnValue(6);
-    mockGetPaymentSettings.mockResolvedValue(null);
+    mockGetPaymentSettings.mockResolvedValue(null as never);
     setupDeliveryTransaction();
 
     await createOrderByVariant(deliveryFulfillment);
@@ -382,7 +382,7 @@ describe("createOrderByVariant", () => {
     mockGetAuth.mockResolvedValue(mockUser);
     mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
     mockCalcConsumption.mockReturnValue(6);
-    mockGetPaymentSettings.mockResolvedValue(null);
+    mockGetPaymentSettings.mockResolvedValue(null as never);
     setupDeliveryTransaction();
     mockSendBankTransfer.mockRejectedValue(new Error("LINE API error"));
 
