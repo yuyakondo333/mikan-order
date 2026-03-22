@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { db } from "@/db";
 import { orders, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -52,7 +53,7 @@ export async function getOrderWithUserAndItemsV2(id: string) {
 /**
  * スナップショットベースの注文詳細取得（顧客向け、address付き）。
  */
-export async function getOrderDetailV2(id: string, userId: string) {
+export const getOrderDetailV2 = cache(async function getOrderDetailV2(id: string, userId: string) {
   const order = await db.query.orders.findFirst({
     where: and(eq(orders.id, id), eq(orders.userId, userId)),
     with: {
@@ -72,7 +73,7 @@ export async function getOrderDetailV2(id: string, userId: string) {
       weightKg: item.weightKg ?? "0",
     })),
   };
-}
+});
 
 export async function updateOrderStatus(
   orderId: string,
