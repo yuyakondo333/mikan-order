@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/db";
 import { orders, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { OrderStatus } from "@/types";
 
 export async function getAllOrders() {
@@ -52,9 +52,9 @@ export async function getOrderWithUserAndItemsV2(id: string) {
 /**
  * スナップショットベースの注文詳細取得（顧客向け、address付き）。
  */
-export async function getOrderDetailV2(id: string) {
+export async function getOrderDetailV2(id: string, userId: string) {
   const order = await db.query.orders.findFirst({
-    where: eq(orders.id, id),
+    where: and(eq(orders.id, id), eq(orders.userId, userId)),
     with: {
       address: true,
       items: true,
