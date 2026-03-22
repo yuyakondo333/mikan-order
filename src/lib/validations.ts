@@ -1,15 +1,9 @@
 import { z } from "zod";
+import { orderStatusEnum } from "@/db/schema";
 
-export const orderStatusSchema = z.enum([
-  "pending",
-  "awaiting_payment",
-  "payment_confirmed",
-  "preparing",
-  "ready",
-  "shipped",
-  "completed",
-  "cancelled",
-]);
+export const orderStatusSchema = z.enum(orderStatusEnum.enumValues);
+
+export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
 export const addressSchema = z.object({
   recipientName: z.string().min(1, "受取人名を入力してください"),
