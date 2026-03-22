@@ -25,10 +25,14 @@ const mockSelect = vi.fn(() => ({
 
 vi.mock("@/db", () => ({
   db: {
-    insert: (...args: unknown[]) => mockInsert(...args),
-    update: (...args: unknown[]) => mockUpdate(...args),
-    delete: (...args: unknown[]) => mockDelete(...args),
-    select: (...args: unknown[]) => mockSelect(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    insert: (...args: unknown[]) => (mockInsert as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    update: (...args: unknown[]) => (mockUpdate as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete: (...args: unknown[]) => (mockDelete as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: (...args: unknown[]) => (mockSelect as any)(...args),
   },
 }));
 
@@ -77,7 +81,7 @@ describe("updateVariant", () => {
   });
 
   it("バリエーションを更新する", async () => {
-    mockUpdateWhere.mockResolvedValue(undefined);
+    mockUpdateWhere.mockResolvedValue(undefined as never);
 
     await updateVariant("v1", { label: "5kg", priceJpy: 2800 });
 
