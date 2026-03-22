@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { CartItem } from "@/components/cart-item";
 import {
   updateCartItemByVariant,
@@ -14,13 +15,19 @@ export function CartContent({ items }: { items: CartItemWithVariant[] }) {
 
   function handleUpdateQuantity(variantId: string, quantity: number) {
     startTransition(async () => {
-      await updateCartItemByVariant(variantId, quantity);
+      const result = await updateCartItemByVariant(variantId, quantity);
+      if (!result.success) {
+        toast.error(result.error || "カートの更新に失敗しました");
+      }
     });
   }
 
   function handleRemove(variantId: string) {
     startTransition(async () => {
-      await removeCartItemByVariant(variantId);
+      const result = await removeCartItemByVariant(variantId);
+      if (!result.success) {
+        toast.error(result.error || "商品の削除に失敗しました");
+      }
     });
   }
 

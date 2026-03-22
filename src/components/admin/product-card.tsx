@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   toggleProductAvailabilityAction,
   deleteProductAction,
@@ -95,6 +96,8 @@ export function ProductCard({
     );
     if (result.success) {
       onProductChange({ ...product, isAvailable: !product.isAvailable });
+    } else {
+      toast.error(result.error || "販売状態の変更に失敗しました");
     }
   }
 
@@ -102,6 +105,8 @@ export function ProductCard({
     const result = await deleteProductAction(product.id);
     if (result.success) {
       onProductDelete(product.id);
+    } else {
+      toast.error(result.error || "商品の削除に失敗しました");
     }
     setDeleteProductTarget(false);
   }
@@ -133,6 +138,8 @@ export function ProductCard({
           ...product,
           variants: [...product.variants, result.variant],
         });
+      } else if (!result.success) {
+        toast.error(result.error || "バリエーションの追加に失敗しました");
       }
     } finally {
       setAddingVariant(false);
@@ -143,7 +150,7 @@ export function ProductCard({
   async function handleDeleteVariant(variantId: string) {
     const result = await deleteVariantAction(variantId, product.id);
     if (!result.success) {
-      alert(result.error);
+      toast.error(result.error || "バリエーションの削除に失敗しました");
     } else {
       onProductChange({
         ...product,
@@ -180,6 +187,11 @@ export function ProductCard({
 
       const updated = buildProductsAfterVariantSave([product], product.id, results);
       onProductChange(updated[0]);
+
+      const failedCount = results.filter((r) => !r.success).length;
+      if (failedCount > 0) {
+        toast.error(`${failedCount}件のバリエーション保存に失敗しました`);
+      }
 
       // 成功分のeditsをクリア、失敗分はeditsに残す
       setVariantEdits((prev) => {

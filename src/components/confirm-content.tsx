@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import { createOrderByVariant } from "@/app/actions/orders";
 import type { CartItemWithVariant } from "@/types";
@@ -69,7 +70,7 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
         sessionStorage.removeItem("orderFulfillment");
         router.push(`/complete?method=${result.fulfillmentMethod}`);
       } else {
-        alert(result.error || "注文に失敗しました");
+        toast.error(result.error || "注文に失敗しました");
       }
     });
   }

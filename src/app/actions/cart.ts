@@ -81,57 +81,67 @@ export async function updateCartItemByVariant(
   variantId: string,
   quantity: number
 ): Promise<CartActionResult> {
-  const user = await getAuthenticatedUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: "認証が必要です" };
 
-  if (quantity < 1) {
-    return { success: false, error: "数量は1以上を指定してください" };
+    if (quantity < 1) {
+      return { success: false, error: "数量は1以上を指定してください" };
+    }
+
+    const variant = await db.query.productVariants.findFirst({
+      where: eq(productVariants.id, variantId),
+    });
+    if (!variant) {
+      return { success: false, error: "バリエーションが見つかりません" };
+    }
+    if (!variant.isAvailable) {
+      return {
+        success: false,
+        error: "このバリエーションは現在販売されていません",
+      };
+    }
+
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, variant.productId),
+    });
+    if (!product || !product.isAvailable) {
+      return { success: false, error: "この商品は現在販売されていません" };
+    }
+
+    const required = calcStockConsumptionKg(quantity, variant.weightKg);
+    if (required > product.stockKg) {
+      return { success: false, error: "在庫が不足しています" };
+    }
+
+    await upsertCartItemByVariant(
+      user.id,
+      variantId,
+      variant.productId,
+      quantity
+    );
+
+    revalidateCartPages();
+    return { success: true };
+  } catch (e) {
+    console.error("Failed to update cart item:", e);
+    return { success: false, error: "カートの更新に失敗しました" };
   }
-
-  const variant = await db.query.productVariants.findFirst({
-    where: eq(productVariants.id, variantId),
-  });
-  if (!variant) {
-    return { success: false, error: "バリエーションが見つかりません" };
-  }
-  if (!variant.isAvailable) {
-    return {
-      success: false,
-      error: "このバリエーションは現在販売されていません",
-    };
-  }
-
-  const product = await db.query.products.findFirst({
-    where: eq(products.id, variant.productId),
-  });
-  if (!product || !product.isAvailable) {
-    return { success: false, error: "この商品は現在販売されていません" };
-  }
-
-  const required = calcStockConsumptionKg(quantity, variant.weightKg);
-  if (required > product.stockKg) {
-    return { success: false, error: "在庫が不足しています" };
-  }
-
-  await upsertCartItemByVariant(
-    user.id,
-    variantId,
-    variant.productId,
-    quantity
-  );
-
-  revalidateCartPages();
-  return { success: true };
 }
 
 export async function removeCartItemByVariant(
   variantId: string
 ): Promise<CartActionResult> {
-  const user = await getAuthenticatedUser();
-  if (!user) return { success: false, error: "認証が必要です" };
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: "認証が必要です" };
 
-  await deleteCartItemByVariant(user.id, variantId);
+    await deleteCartItemByVariant(user.id, variantId);
 
-  revalidateCartPages();
-  return { success: true };
+    revalidateCartPages();
+    return { success: true };
+  } catch (e) {
+    console.error("Failed to remove cart item:", e);
+    return { success: false, error: "商品の削除に失敗しました" };
+  }
 }

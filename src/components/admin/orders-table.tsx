@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { updateOrderStatusByVariantAction } from "@/app/actions/orders";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
@@ -84,10 +85,22 @@ export function AdminOrdersTable({
   }, [orders, filterStatus, sortOrder]);
 
   async function updateStatus(orderId: string, status: string) {
-    await updateOrderStatusByVariantAction(orderId, status);
+    const previousStatus = orders.find((o) => o.id === orderId)?.status;
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status } : o))
     );
+
+    const result = await updateOrderStatusByVariantAction(orderId, status);
+    if (!result.success) {
+      toast.error(result.error || "ステータスの更新に失敗しました");
+      if (previousStatus) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: previousStatus } : o
+          )
+        );
+      }
+    }
   }
 
   function getStatusOptions(fulfillmentMethod: string) {
