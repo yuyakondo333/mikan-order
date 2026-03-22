@@ -18,7 +18,7 @@ import {
   sendOrderConfirmationWithBankTransfer,
 } from "@/lib/line";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
-import { fulfillmentSchema } from "@/lib/validations";
+import { fulfillmentSchema, orderStatusSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { db } from "@/db";
@@ -203,9 +203,16 @@ export async function updateOrderStatusByVariantAction(
     return { success: false, error: "管理者認証が必要です" };
   }
 
+  const parsed = orderStatusSchema.safeParse(status);
+  if (!parsed.success) {
+    return { success: false, error: "無効なステータスです" };
+  }
+
+  const validatedStatus = parsed.data;
+
   try {
     // キャンセル時はスナップショットベースで在庫復元
-    if (status === "cancelled") {
+    if (validatedStatus === "cancelled") {
       const order = await getOrderWithUserAndItemsV2(orderId);
       if (order && order.status !== "cancelled") {
         for (const item of order.items) {
@@ -216,10 +223,10 @@ export async function updateOrderStatusByVariantAction(
       }
     }
 
-    await updateOrderStatus(orderId, status);
+    await updateOrderStatus(orderId, validatedStatus);
 
     // 発送完了 → LINE通知（delivery注文のみ）
-    if (status === "shipped") {
+    if (validatedStatus === "shipped") {
       try {
         const order = await getOrderWithUserAndItemsV2(orderId);
         if (
@@ -247,7 +254,7 @@ export async function updateOrderStatusByVariantAction(
     }
 
     // 準備完了 → LINE通知（バリエーションラベル付き）
-    if (status === "ready") {
+    if (validatedStatus === "ready") {
       try {
         const order = await getOrderWithUserAndItemsV2(orderId);
         if (
