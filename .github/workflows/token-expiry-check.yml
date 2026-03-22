@@ -1,0 +1,70 @@
+name: Token Expiry Check
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 毎週月曜 UTC 00:00
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  check:
+    name: Check Vercel Token Expiry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check expiry date
+        env:
+          EXPIRES_AT: ${{ vars.VERCEL_TOKEN_EXPIRES_AT }}
+        run: |
+          if [ -z "$EXPIRES_AT" ]; then
+            echo "::warning::VERCEL_TOKEN_EXPIRES_AT variable is not set."
+            exit 0
+          fi
+
+          expires_ts=$(date -d "$EXPIRES_AT" +%s)
+          now_ts=$(date +%s)
+          days_left=$(( (expires_ts - now_ts) / 86400 ))
+
+          echo "Token expires: $EXPIRES_AT ($days_left days left)"
+
+          if [ "$days_left" -le 7 ]; then
+            echo "should_notify=true" >> $GITHUB_ENV
+            echo "days_left=$days_left" >> $GITHUB_ENV
+          else
+            echo "should_notify=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create issue for token renewal
+        if: env.should_notify == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh issue list --repo ${{ github.repository }} --label "token-renewal" --state open --json number --jq '.[0].number')
+
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing already exists. Skipping."
+            exit 0
+          fi
+
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "Vercel Token が ${{ env.days_left }} 日後に期限切れになります" \
+            --label "token-renewal" \
+            --body "$(cat <<'EOF'
+          ## Vercel Token の更新が必要です
+
+          **期限日**: ${{ vars.VERCEL_TOKEN_EXPIRES_AT }}
+          **残り日数**: ${{ env.days_left }} 日
+
+          ### 更新手順
+
+          1. [Vercel Tokens ページ](https://vercel.com/account/tokens) で新しいトークンを作成（Scope: Full Account, 期限: 90日）
+          2. GitHub Secret を更新:
+             ```bash
+             gh secret set VERCEL_TOKEN --repo yuyakondo333/mikan-order
+             ```
+          3. GitHub Variable を更新:
+             ```bash
+             gh variable set VERCEL_TOKEN_EXPIRES_AT --repo yuyakondo333/mikan-order --body "YYYY-MM-DD"
+             ```
+          4. このissueをクローズ
+          EOF
+          )"

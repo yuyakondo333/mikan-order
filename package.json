@@ -13,7 +13,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "setup:richmenu": "npx tsx scripts/setup-richmenu.ts"
+    "setup:richmenu": "npx tsx scripts/setup-richmenu.ts",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
