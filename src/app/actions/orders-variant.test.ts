@@ -51,7 +51,8 @@ vi.mock("@/auth", () => ({ auth: mockAuth }));
 import { getAuthenticatedUser } from "@/lib/dal";
 import { getCartWithVariants } from "@/db/queries/cart";
 import { calcStockConsumptionKg, restoreStockKg } from "@/db/queries/products";
-import { getOrderWithUserAndItemsV2 } from "@/db/queries/orders";
+import { updateOrderStatus, getOrderWithUserAndItemsV2 } from "@/db/queries/orders";
+import { revalidatePath } from "next/cache";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
 import {
   sendOrderConfirmationWithBankTransfer,
@@ -545,6 +546,53 @@ describe("updateOrderStatusByVariantAction", () => {
     expect(mockRestoreStockKg).toHaveBeenCalledTimes(2);
     expect(mockRestoreStockKg).toHaveBeenCalledWith("p1", 6);
     expect(mockRestoreStockKg).toHaveBeenCalledWith("p1", 5);
+  });
+
+  // V2+: 無効ステータスでエラー + DAL未呼出 + revalidatePath未呼出
+  it("無効なステータス値でエラーを返し、DBアクセスしない", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "invalid_status");
+
+    expect(result).toEqual({ success: false, error: "無効なステータスです" });
+    expect(vi.mocked(updateOrderStatus)).not.toHaveBeenCalled();
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
+  });
+
+  // V6a: 非管理者 + 無効ステータス → 認証エラーが返る（バリデーションエラーではない）
+  it("非管理者が無効ステータスを送信しても認証エラーが返る", async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "invalid_status");
+
+    expect(result).toEqual({ success: false, error: "管理者認証が必要です" });
+  });
+
+  // V3: 空文字でエラー
+  it("空文字のステータスでエラーを返す", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "");
+
+    expect(result).toEqual({ success: false, error: "無効なステータスです" });
+  });
+
+  // V8: 大文字混在でエラー
+  it("大文字混在のステータス 'Pending' でエラーを返す", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "Pending");
+
+    expect(result).toEqual({ success: false, error: "無効なステータスです" });
   });
 
   // shipped + delivery → LINE発送通知が送られる
