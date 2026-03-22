@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
-import type { Address } from "@/types";
+import { hasBankTransferInfo } from "@/lib/payment";
+import type { Address, BankTransferInfo } from "@/types";
 
 type OrderItemDetail = {
   id: string;
@@ -26,7 +27,12 @@ type OrderDetailData = {
   items: OrderItemDetail[];
 };
 
-export function OrderDetailView({ order }: { order: OrderDetailData }) {
+type Props = {
+  order: OrderDetailData;
+  bankTransferInfo?: BankTransferInfo | null;
+};
+
+export function OrderDetailView({ order, bankTransferInfo }: Props) {
   return (
     <div className="min-h-screen bg-orange-50 p-4">
       <Link
@@ -125,6 +131,28 @@ export function OrderDetailView({ order }: { order: OrderDetailData }) {
                 </>
               )}
               <p>お支払い: 銀行振込（事前入金）</p>
+              {order.status === "awaiting_payment" && (
+                <div className="mt-3 rounded-md bg-orange-100 p-3">
+                  {bankTransferInfo && hasBankTransferInfo(bankTransferInfo) ? (
+                    <>
+                      <p className="mb-2 font-bold text-orange-800">
+                        お振込先
+                      </p>
+                      <div className="space-y-1 text-sm text-orange-900">
+                        <p>銀行名: {bankTransferInfo.bankName}</p>
+                        <p>支店名: {bankTransferInfo.branchName}</p>
+                        <p>口座種別: {bankTransferInfo.accountType}</p>
+                        <p>口座番号: {bankTransferInfo.accountNumber}</p>
+                        <p>口座名義: {bankTransferInfo.accountHolder}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-orange-800">
+                      お振込先は別途ご連絡いたします。
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

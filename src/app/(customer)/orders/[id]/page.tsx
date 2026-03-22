@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getOrderDetailV2 } from "@/db/queries/orders";
+import { getPaymentSettings } from "@/db/queries/payment-settings";
 import { OrderDetailView } from "@/components/order-detail-view";
 import { notFound } from "next/navigation";
 
@@ -26,5 +27,11 @@ export default async function OrderDetailPage({
   const { id } = await params;
   const order = await getOrderDetailV2(id);
   if (!order) notFound();
-  return <OrderDetailView order={order} />;
+
+  const bankTransferInfo =
+    order.fulfillmentMethod === "delivery" && order.status === "awaiting_payment"
+      ? await getPaymentSettings()
+      : null;
+
+  return <OrderDetailView order={order} bankTransferInfo={bankTransferInfo} />;
 }
