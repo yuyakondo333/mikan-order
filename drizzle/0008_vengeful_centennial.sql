@@ -1,0 +1,1 @@
+ALTER TABLE "products" ALTER COLUMN "stock_kg" SET DATA TYPE integer;

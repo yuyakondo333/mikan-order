@@ -57,6 +57,13 @@
       "when": 1774024270726,
       "tag": "0007_wooden_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774177482921,
+      "tag": "0008_vengeful_centennial",
+      "breakpoints": true
     }
   ]
 }
