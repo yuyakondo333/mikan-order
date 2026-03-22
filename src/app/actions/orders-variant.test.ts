@@ -21,6 +21,10 @@ vi.mock("@/db/queries/orders", () => ({
   getOrderWithUserAndItemsV2: vi.fn(),
 }));
 
+vi.mock("@/db/queries/payment-settings", () => ({
+  getPaymentSettings: vi.fn(),
+}));
+
 vi.mock("@/db", () => ({
   db: {
     transaction: vi.fn(),
@@ -47,6 +51,8 @@ import { getAuthenticatedUser } from "@/lib/dal";
 import { getCartWithVariants } from "@/db/queries/cart";
 import { calcStockConsumptionKg, restoreStockKg } from "@/db/queries/products";
 import { getOrderWithUserAndItemsV2 } from "@/db/queries/orders";
+import { getPaymentSettings } from "@/db/queries/payment-settings";
+import { sendOrderConfirmationWithBankTransfer } from "@/lib/line";
 import { db } from "@/db";
 import {
   createOrderByVariant,
@@ -58,6 +64,8 @@ const mockGetCartWithVariants = vi.mocked(getCartWithVariants);
 const mockCalcConsumption = vi.mocked(calcStockConsumptionKg);
 const mockRestoreStockKg = vi.mocked(restoreStockKg);
 const mockGetOrderV2 = vi.mocked(getOrderWithUserAndItemsV2);
+const mockGetPaymentSettings = vi.mocked(getPaymentSettings);
+const mockSendBankTransfer = vi.mocked(sendOrderConfirmationWithBankTransfer);
 const mockDbTransaction = vi.mocked(db.transaction);
 
 const mockUser = {
@@ -274,6 +282,113 @@ describe("createOrderByVariant", () => {
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("在庫");
+  });
+
+  // delivery注文 + 振込先情報
+  const deliveryFulfillment = {
+    fulfillmentMethod: "delivery" as const,
+    address: {
+      recipientName: "テスト太郎",
+      postalCode: "100-0001",
+      prefecture: "東京都",
+      city: "千代田区",
+      line1: "千代田1-1-1",
+    },
+  };
+
+  function setupDeliveryTransaction() {
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "p1" }]),
+      });
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "addr-1" }]),
+            }),
+          };
+        }
+        if (insertCall === 2) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+            }),
+          };
+        }
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
+      return callback(tx as never);
+    });
+  }
+
+  it("delivery注文時にpaymentSettingsの振込先情報がLINE通知に渡される", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+    mockGetPaymentSettings.mockResolvedValue({
+      id: "ps-1",
+      bankName: "みかん銀行",
+      branchName: "果実支店",
+      accountType: "普通",
+      accountNumber: "1234567",
+      accountHolder: "ミカンノウエン",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    setupDeliveryTransaction();
+
+    await createOrderByVariant(deliveryFulfillment);
+
+    expect(mockSendBankTransfer).toHaveBeenCalledWith(
+      "U1234567890",
+      3600, // 1800 × 2
+      {
+        bankName: "みかん銀行",
+        branchName: "果実支店",
+        accountType: "普通",
+        accountNumber: "1234567",
+        accountHolder: "ミカンノウエン",
+      }
+    );
+  });
+
+  it("paymentSettingsがnullの場合、全フィールドnullのbankInfoでLINE通知する", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+    mockGetPaymentSettings.mockResolvedValue(null);
+    setupDeliveryTransaction();
+
+    await createOrderByVariant(deliveryFulfillment);
+
+    expect(mockSendBankTransfer).toHaveBeenCalledWith(
+      "U1234567890",
+      3600,
+      {
+        bankName: null,
+        branchName: null,
+        accountType: null,
+        accountNumber: null,
+        accountHolder: null,
+      }
+    );
+  });
+
+  it("LINE通知失敗時も注文自体は成功する", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+    mockGetPaymentSettings.mockResolvedValue(null);
+    setupDeliveryTransaction();
+    mockSendBankTransfer.mockRejectedValue(new Error("LINE API error"));
+
+    const result = await createOrderByVariant(deliveryFulfillment);
+
+    expect(result).toEqual({ success: true, fulfillmentMethod: "delivery" });
   });
 
   // E14: 合計金額が variant.priceJpy × quantity の合計で計算される
