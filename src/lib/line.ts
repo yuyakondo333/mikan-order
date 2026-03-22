@@ -1,5 +1,6 @@
 import { messagingApi } from "@line/bot-sdk";
 import type { BankTransferInfo } from "@/types";
+import { hasBankTransferInfo } from "@/lib/payment";
 
 const client = new messagingApi.MessagingApiClient({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN!,
@@ -55,16 +56,6 @@ export async function sendPickupReadyNotification({
     to: lineUserId,
     messages: [{ type: "text", text }],
   });
-}
-
-function hasBankTransferInfo(info: BankTransferInfo): boolean {
-  return !!(
-    info.bankName &&
-    info.branchName &&
-    info.accountType &&
-    info.accountNumber &&
-    info.accountHolder
-  );
 }
 
 export async function sendOrderConfirmationWithBankTransfer(
