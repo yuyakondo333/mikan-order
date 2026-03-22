@@ -103,6 +103,25 @@ export type LegalInfo = {
   updatedAt: Date | string;
 };
 
+export type PaymentSettings = {
+  id: string;
+  bankName: string | null;
+  branchName: string | null;
+  accountType: string | null;
+  accountNumber: string | null;
+  accountHolder: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+export type BankTransferInfo = {
+  bankName: string | null;
+  branchName: string | null;
+  accountType: string | null;
+  accountNumber: string | null;
+  accountHolder: string | null;
+};
+
 export type User = {
   id: string;
   lineUserId: string;

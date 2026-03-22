@@ -214,6 +214,18 @@ export const legalInfo = pgTable("legal_info", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Payment Settings (single-row settings table)
+export const paymentSettings = pgTable("payment_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  bankName: text("bank_name"),
+  branchName: text("branch_name"),
+  accountType: text("account_type"),
+  accountNumber: text("account_number"),
+  accountHolder: text("account_holder"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   user: one(users, { fields: [cartItems.userId], references: [users.id] }),
   product: one(products, {
