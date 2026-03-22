@@ -69,6 +69,7 @@ const mockGetCartWithVariants = vi.mocked(getCartWithVariants);
 const mockCalcConsumption = vi.mocked(calcStockConsumptionKg);
 const mockRestoreStockKg = vi.mocked(restoreStockKg);
 const mockGetOrderV2 = vi.mocked(getOrderWithUserAndItemsV2);
+const mockUpdateOrderStatus = vi.mocked(updateOrderStatus);
 const mockSendShipping = vi.mocked(sendShippingNotification);
 const mockGetPaymentSettings = vi.mocked(getPaymentSettings);
 const mockSendBankTransfer = vi.mocked(sendOrderConfirmationWithBankTransfer);
@@ -443,6 +444,7 @@ describe("createOrderByVariant", () => {
 describe("updateOrderStatusByVariantAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUpdateOrderStatus.mockResolvedValue({ id: "order-1" });
   });
 
   // F1: 非管理者 → エラー
@@ -662,5 +664,50 @@ describe("updateOrderStatusByVariantAction", () => {
 
     expect(result).toEqual({ success: true });
     expect(mockSendShipping).not.toHaveBeenCalled();
+  });
+
+  it("存在しないorderIdでエラーを返し、revalidatePathが呼ばれない", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockUpdateOrderStatus.mockResolvedValue(null);
+
+    const result = await updateOrderStatusByVariantAction("non-existent-id", "pending");
+
+    expect(result).toEqual({ success: false, error: "注文が見つかりません" });
+    expect(mockUpdateOrderStatus).toHaveBeenCalledWith("non-existent-id", "pending");
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
+  });
+
+  it("存在しないorderIdでキャンセル→在庫復元されず、エラーが返る", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockGetOrderV2.mockResolvedValue(null);
+    mockUpdateOrderStatus.mockResolvedValue(null);
+
+    const result = await updateOrderStatusByVariantAction("non-existent-id", "cancelled");
+
+    expect(result).toEqual({ success: false, error: "注文が見つかりません" });
+    expect(mockRestoreStockKg).not.toHaveBeenCalled();
+    expect(mockUpdateOrderStatus).toHaveBeenCalledWith("non-existent-id", "cancelled");
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
+  });
+
+  it("存在しないorderIdでshipped→LINE通知が送られず、エラーが返る", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockUpdateOrderStatus.mockResolvedValue(null);
+
+    const result = await updateOrderStatusByVariantAction("non-existent-id", "shipped");
+
+    expect(result).toEqual({ success: false, error: "注文が見つかりません" });
+    expect(mockUpdateOrderStatus).toHaveBeenCalledWith("non-existent-id", "shipped");
+    expect(mockSendShipping).not.toHaveBeenCalled();
+    expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
   });
 });
