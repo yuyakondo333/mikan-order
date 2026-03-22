@@ -47,15 +47,7 @@ export type FulfillmentMethod = "pickup" | "delivery";
 
 export type PickupTimeSlot = "morning" | "early_afternoon" | "late_afternoon";
 
-export type OrderStatus =
-  | "pending"
-  | "awaiting_payment"
-  | "payment_confirmed"
-  | "preparing"
-  | "ready"
-  | "shipped"
-  | "completed"
-  | "cancelled";
+export type { OrderStatus } from "@/lib/validations";
 
 export type Order = {
   id: string;
