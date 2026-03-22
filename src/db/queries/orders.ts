@@ -3,6 +3,7 @@ import "server-only";
 import { db } from "@/db";
 import { orders, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import type { OrderStatus } from "@/types";
 
 export async function getAllOrders() {
   return db.query.orders.findMany({
@@ -73,22 +74,12 @@ export async function getOrderDetailV2(id: string) {
   };
 }
 
-type OrderStatus =
-  | "pending"
-  | "awaiting_payment"
-  | "payment_confirmed"
-  | "preparing"
-  | "ready"
-  | "shipped"
-  | "completed"
-  | "cancelled";
-
 export async function updateOrderStatus(
   orderId: string,
-  status: OrderStatus | string
+  status: OrderStatus
 ) {
   await db
     .update(orders)
-    .set({ status: status as OrderStatus })
+    .set({ status })
     .where(eq(orders.id, orderId));
 }
