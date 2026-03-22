@@ -11,7 +11,8 @@ const mockFindMany = vi.fn();
 
 vi.mock("@/db", () => ({
   db: {
-    update: (...args: unknown[]) => mockUpdate(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    update: (...args: unknown[]) => (mockUpdate as any)(...args),
     query: {
       products: {
         findMany: (...args: unknown[]) => mockFindMany(...args),
@@ -97,7 +98,7 @@ describe("restoreStockKg", () => {
 
   // C4: 指定量が加算される
   it("指定量が加算される", async () => {
-    mockWhere.mockResolvedValue(undefined);
+    mockWhere.mockResolvedValue(undefined as never);
 
     await restoreStockKg("p1", 6);
 

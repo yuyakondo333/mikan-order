@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { signIn } from "next-auth/react";
 
 type Status = "loading" | "webview" | "browser";
@@ -69,12 +69,16 @@ function WebViewGuide() {
   );
 }
 
-export function GoogleLoginButton() {
-  const [status, setStatus] = useState<Status>("loading");
+const emptySubscribe = () => () => {};
+const getClientStatus = (): Status => (isWebView() ? "webview" : "browser");
+const getServerStatus = (): Status => "loading";
 
-  useEffect(() => {
-    setStatus(isWebView() ? "webview" : "browser");
-  }, []);
+export function GoogleLoginButton() {
+  const status = useSyncExternalStore(
+    emptySubscribe,
+    getClientStatus,
+    getServerStatus,
+  );
 
   if (status === "loading") return <Loading />;
   if (status === "webview") return <WebViewGuide />;

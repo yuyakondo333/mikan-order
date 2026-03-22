@@ -29,9 +29,12 @@ vi.mock("@/db", () => ({
     query: {
       cartItems: { findFirst: (...args: unknown[]) => mockFindFirst(...args) },
     },
-    select: (...args: unknown[]) => mockSelect(...args),
-    insert: (...args: unknown[]) => mockInsert(...args),
-    delete: (...args: unknown[]) => mockDelete(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: (...args: unknown[]) => (mockSelect as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    insert: (...args: unknown[]) => (mockInsert as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete: (...args: unknown[]) => (mockDelete as any)(...args),
   },
 }));
 

@@ -19,7 +19,7 @@ vi.mock("next-auth/providers/credentials", () => ({
 }));
 
 vi.mock("next-auth/providers/google", () => ({
-  default: {},
+  default: vi.fn(() => ({})),
 }));
 
 import { authConfig } from "@/auth";
