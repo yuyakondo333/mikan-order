@@ -36,6 +36,7 @@ vi.mock("@/lib/line", () => ({
   sendOrderConfirmationWithPickup: vi.fn(),
   sendOrderConfirmationWithBankTransfer: vi.fn(),
   sendPickupReadyNotification: vi.fn(),
+  sendShippingNotification: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -52,7 +53,10 @@ import { getCartWithVariants } from "@/db/queries/cart";
 import { calcStockConsumptionKg, restoreStockKg } from "@/db/queries/products";
 import { getOrderWithUserAndItemsV2 } from "@/db/queries/orders";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
-import { sendOrderConfirmationWithBankTransfer } from "@/lib/line";
+import {
+  sendOrderConfirmationWithBankTransfer,
+  sendShippingNotification,
+} from "@/lib/line";
 import { db } from "@/db";
 import {
   createOrderByVariant,
@@ -64,6 +68,7 @@ const mockGetCartWithVariants = vi.mocked(getCartWithVariants);
 const mockCalcConsumption = vi.mocked(calcStockConsumptionKg);
 const mockRestoreStockKg = vi.mocked(restoreStockKg);
 const mockGetOrderV2 = vi.mocked(getOrderWithUserAndItemsV2);
+const mockSendShipping = vi.mocked(sendShippingNotification);
 const mockGetPaymentSettings = vi.mocked(getPaymentSettings);
 const mockSendBankTransfer = vi.mocked(sendOrderConfirmationWithBankTransfer);
 const mockDbTransaction = vi.mocked(db.transaction);
@@ -540,5 +545,74 @@ describe("updateOrderStatusByVariantAction", () => {
     expect(mockRestoreStockKg).toHaveBeenCalledTimes(2);
     expect(mockRestoreStockKg).toHaveBeenCalledWith("p1", 6);
     expect(mockRestoreStockKg).toHaveBeenCalledWith("p1", 5);
+  });
+
+  // shipped + delivery → LINE発送通知が送られる
+  it("delivery注文をshippedにするとLINE発送通知が送られる", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockGetOrderV2.mockResolvedValue({
+      id: "order-1",
+      status: "preparing",
+      fulfillmentMethod: "delivery",
+      user: { lineUserId: "U123" },
+      items: [
+        { productName: "早生みかん", label: "3kg", quantity: 2 },
+      ],
+    } as never);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "shipped");
+
+    expect(result).toEqual({ success: true });
+    expect(mockSendShipping).toHaveBeenCalledWith({
+      lineUserId: "U123",
+      itemsSummary: "早生みかん 3kg × 2",
+    });
+  });
+
+  // shipped + 通知失敗 → ステータス更新は成功する
+  it("発送通知が失敗してもステータス更新は成功する", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockGetOrderV2.mockResolvedValue({
+      id: "order-1",
+      status: "preparing",
+      fulfillmentMethod: "delivery",
+      user: { lineUserId: "U123" },
+      items: [
+        { productName: "早生みかん", label: "3kg", quantity: 1 },
+      ],
+    } as never);
+    mockSendShipping.mockRejectedValue(new Error("LINE API error"));
+
+    const result = await updateOrderStatusByVariantAction("order-1", "shipped");
+
+    expect(result).toEqual({ success: true });
+  });
+
+  // pickup注文をshippedにしても発送通知は送られない
+  it("pickup注文をshippedにしても発送通知は送られない", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockGetOrderV2.mockResolvedValue({
+      id: "order-1",
+      status: "preparing",
+      fulfillmentMethod: "pickup",
+      user: { lineUserId: "U123" },
+      items: [
+        { productName: "早生みかん", label: "3kg", quantity: 1 },
+      ],
+    } as never);
+
+    const result = await updateOrderStatusByVariantAction("order-1", "shipped");
+
+    expect(result).toEqual({ success: true });
+    expect(mockSendShipping).not.toHaveBeenCalled();
   });
 });

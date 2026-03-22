@@ -5,18 +5,26 @@ const client = new messagingApi.MessagingApiClient({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN!,
 });
 
-export async function sendShippingNotification(
-  lineUserId: string,
-  orderId: string
-) {
+type ShippingNotificationParams = {
+  lineUserId: string;
+  itemsSummary: string;
+};
+
+export async function sendShippingNotification({
+  lineUserId,
+  itemsSummary,
+}: ShippingNotificationParams) {
+  const text = [
+    "🍊 ご注文の商品を発送しました！",
+    "",
+    `【注文内容】${itemsSummary}`,
+    "",
+    "お届けまでしばらくお待ちください。",
+  ].join("\n");
+
   await client.pushMessage({
     to: lineUserId,
-    messages: [
-      {
-        type: "text",
-        text: `🍊 ご注文の商品を発送しました！\n注文ID: ${orderId}\nお届けまでしばらくお待ちください。`,
-      },
-    ],
+    messages: [{ type: "text", text }],
   });
 }
 
