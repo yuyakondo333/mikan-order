@@ -1,9 +1,34 @@
 import { describe, it, expect } from "vitest";
 import {
+  orderStatusSchema,
   variantSchema,
   newProductSchema,
   productWithVariantsSchema,
 } from "./validations";
+
+describe("orderStatusSchema", () => {
+  const validStatuses = [
+    "pending",
+    "awaiting_payment",
+    "payment_confirmed",
+    "preparing",
+    "ready",
+    "shipped",
+    "completed",
+    "cancelled",
+  ];
+
+  // V1: 全8種の有効ステータスを受け入れる
+  it.each(validStatuses)("有効なステータス '%s' を受け入れる", (status) => {
+    const result = orderStatusSchema.safeParse(status);
+    expect(result.success).toBe(true);
+  });
+
+  it("無効な値を拒否する", () => {
+    const result = orderStatusSchema.safeParse("invalid");
+    expect(result.success).toBe(false);
+  });
+});
 
 describe("variantSchema", () => {
   // A4: label が空文字 → エラー
