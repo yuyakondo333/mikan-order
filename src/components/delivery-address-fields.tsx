@@ -1,9 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, getFormProps, getInputProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 import { addressSchema } from "@/lib/validations";
 import type { AddressFormData } from "@/lib/validations";
+
+export function areRequiredAddressFieldsFilled(values: AddressFormData): boolean {
+  return Boolean(
+    values.recipientName &&
+    values.postalCode &&
+    values.prefecture &&
+    values.city &&
+    values.line1
+  );
+}
 
 type Props = {
   defaultAddress: AddressFormData;
@@ -11,6 +22,13 @@ type Props = {
 };
 
 export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) {
+  const [currentValues, setCurrentValues] = useState<AddressFormData>(defaultAddress);
+  const isSubmitDisabled = !areRequiredAddressFieldsFilled(currentValues);
+
+  const handleInputChange = (field: keyof AddressFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentValues(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
   const [form, fields] = useForm({
     id: "delivery-address",
     defaultValue: defaultAddress,
@@ -35,6 +53,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.recipientName, { type: "text" })}
+          onChange={handleInputChange("recipientName")}
           className="mt-1 w-full rounded border p-2"
         />
         {fields.recipientName.errors && (
@@ -47,6 +66,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.postalCode, { type: "text" })}
+          onChange={handleInputChange("postalCode")}
           placeholder="123-4567"
           className="mt-1 w-full rounded border p-2"
         />
@@ -60,6 +80,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.prefecture, { type: "text" })}
+          onChange={handleInputChange("prefecture")}
           className="mt-1 w-full rounded border p-2"
         />
         {fields.prefecture.errors && (
@@ -72,6 +93,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.city, { type: "text" })}
+          onChange={handleInputChange("city")}
           className="mt-1 w-full rounded border p-2"
         />
         {fields.city.errors && (
@@ -84,6 +106,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.line1, { type: "text" })}
+          onChange={handleInputChange("line1")}
           className="mt-1 w-full rounded border p-2"
         />
         {fields.line1.errors && (
@@ -102,7 +125,8 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
 
       <button
         type="submit"
-        className="mt-6 w-full cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600"
+        disabled={isSubmitDisabled}
+        className="mt-6 w-full cursor-pointer rounded-full bg-orange-500 py-3 font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300"
       >
         確認画面へ進む
       </button>
