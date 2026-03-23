@@ -190,7 +190,7 @@ export async function createOrderByVariant(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((e as any)?.cause) console.error("PG cause:", (e as any).cause);
     if (e instanceof Error && e.message.includes("在庫")) {
-      return { success: false, error: e.message };
+      return { success: false, error: "在庫が不足しています。再度お試しください。" };
     }
     return { success: false, error: "注文の処理中にエラーが発生しました" };
   }
