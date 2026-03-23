@@ -187,18 +187,22 @@ export async function createOrderByVariant(
     return { success: true, fulfillmentMethod: orderData.fulfillmentMethod };
   } catch (e) {
     console.error("Failed to create order:", e);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((e as any)?.cause) console.error("PG cause:", (e as any).cause);
     if (e instanceof Error && e.message.includes("在庫")) {
       return { success: false, error: e.message };
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const err = e as any;
+    // Drizzle ORM wraps PG errors — actual PG details are in err.cause
+    const pgErr = err?.cause ?? err;
     const details = [
-      err?.message,
-      err?.code && `code:${err.code}`,
-      err?.detail && `detail:${err.detail}`,
-      err?.severity && `severity:${err.severity}`,
-      err?.constraint && `constraint:${err.constraint}`,
-      err?.routine && `routine:${err.routine}`,
+      pgErr?.message,
+      pgErr?.code && `code:${pgErr.code}`,
+      pgErr?.detail && `detail:${pgErr.detail}`,
+      pgErr?.severity && `severity:${pgErr.severity}`,
+      pgErr?.constraint && `constraint:${pgErr.constraint}`,
+      pgErr?.routine && `routine:${pgErr.routine}`,
     ].filter(Boolean).join(" | ");
     return { success: false, error: `注文エラー: ${details}` };
   }
