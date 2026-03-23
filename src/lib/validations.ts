@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { orderStatusEnum } from "@/db/schema";
+import { PREFECTURES } from "@/lib/constants";
 
 export const orderStatusSchema = z.enum(orderStatusEnum.enumValues);
 
@@ -10,7 +11,9 @@ export const addressSchema = z.object({
   postalCode: z
     .string()
     .regex(/^\d{3}-?\d{4}$/, "郵便番号の形式が正しくありません（例: 123-4567）"),
-  prefecture: z.string().min(1, "都道府県を入力してください"),
+  prefecture: z.enum(PREFECTURES, {
+    message: "有効な都道府県を選択してください",
+  }),
   city: z.string().min(1, "市区町村を入力してください"),
   line1: z.string().min(1, "番地を入力してください"),
   line2: z.string().optional().default(""),
@@ -109,6 +112,9 @@ export type ProductWithVariantsFormData = z.infer<
 >;
 
 export type AddressFormData = z.infer<typeof addressSchema>;
+export type AddressDraft = Omit<AddressFormData, "prefecture"> & {
+  prefecture: string;
+};
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
 export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;

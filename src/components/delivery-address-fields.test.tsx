@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { areRequiredAddressFieldsFilled } from "./delivery-address-fields";
-import type { AddressFormData } from "@/lib/validations";
+import type { AddressDraft } from "@/lib/validations";
 
-const emptyAddress: AddressFormData = {
+const emptyAddress: AddressDraft = {
   recipientName: "",
   postalCode: "",
   prefecture: "",
@@ -11,7 +11,7 @@ const emptyAddress: AddressFormData = {
   line2: "",
 };
 
-const filledAddress: AddressFormData = {
+const filledAddress: AddressDraft = {
   recipientName: "山田太郎",
   postalCode: "123-4567",
   prefecture: "東京都",
@@ -26,7 +26,7 @@ describe("areRequiredAddressFieldsFilled", () => {
   });
 
   it("一部の必須フィールドのみ入力されている場合、falseを返す", () => {
-    const partial: AddressFormData = {
+    const partial: AddressDraft = {
       ...emptyAddress,
       recipientName: "山田太郎",
       postalCode: "123-4567",
@@ -39,7 +39,7 @@ describe("areRequiredAddressFieldsFilled", () => {
   });
 
   it("任意フィールド(line2)が空でも必須が全て入力済みならtrueを返す", () => {
-    const withoutLine2: AddressFormData = {
+    const withoutLine2: AddressDraft = {
       recipientName: "山田太郎",
       postalCode: "123-4567",
       prefecture: "東京都",
