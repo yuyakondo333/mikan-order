@@ -35,6 +35,7 @@ import {
 import {
   createProductWithVariantsAction,
   updateProductV2Action,
+  toggleProductAvailabilityAction,
   createVariantAction,
   updateVariantAction,
   deleteVariantAction,
@@ -99,6 +100,24 @@ describe("createProductWithVariantsAction", () => {
       expect(result.variants![0]).toMatchObject({ id: "v1", label: "3kg" });
     }
   });
+
+  it("variants空配列でisAvailable=trueを指定しても強制的にfalseで作成される", async () => {
+    setupAdmin();
+    mockCreateProduct.mockResolvedValue({
+      id: "p1",
+      name: "test",
+    } as never);
+
+    const result = await createProductWithVariantsAction(
+      { name: "test", isAvailable: true },
+      []
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ isAvailable: false })
+    );
+  });
 });
 
 describe("updateProductV2Action", () => {
@@ -123,6 +142,40 @@ describe("updateProductV2Action", () => {
       stockKg: 50,
       isAvailable: false,
     });
+  });
+
+  it("バリエーション0件の商品をisAvailable=trueで更新するとエラーを返す", async () => {
+    setupAdmin();
+    mockCountVariants.mockResolvedValue(0);
+
+    const result = await updateProductV2Action("p1", { isAvailable: true });
+
+    expect(result).toEqual({
+      success: false,
+      error: "バリエーションがない商品は公開できません",
+    });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("バリエーション0件でもisAvailableを含まない更新は成功する", async () => {
+    setupAdmin();
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await updateProductV2Action("p1", { name: "新名前" });
+
+    expect(result).toEqual({ success: true });
+    expect(mockCountVariants).not.toHaveBeenCalled();
+  });
+
+  it("バリエーション1件以上の商品はisAvailable=trueで更新できる", async () => {
+    setupAdmin();
+    mockCountVariants.mockResolvedValue(3);
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await updateProductV2Action("p1", { isAvailable: true });
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateProduct).toHaveBeenCalled();
   });
 });
 
@@ -201,5 +254,45 @@ describe("deleteVariantAction", () => {
 
     expect(result).toEqual({ success: true });
     expect(mockDeleteVariant).toHaveBeenCalledWith("v1");
+  });
+});
+
+describe("toggleProductAvailabilityAction — バリエーションチェック", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("バリエーション0件の商品を公開しようとするとエラーを返す", async () => {
+    setupAdmin();
+    mockCountVariants.mockResolvedValue(0);
+
+    const result = await toggleProductAvailabilityAction("p1", true);
+
+    expect(result).toEqual({
+      success: false,
+      error: "バリエーションがない商品は公開できません",
+    });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("バリエーション1件以上の商品を公開できる", async () => {
+    setupAdmin();
+    mockCountVariants.mockResolvedValue(2);
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await toggleProductAvailabilityAction("p1", true);
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateProduct).toHaveBeenCalledWith("p1", { isAvailable: true });
+  });
+
+  it("非公開にする場合はバリエーション数を問わず成功する", async () => {
+    setupAdmin();
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await toggleProductAvailabilityAction("p1", false);
+
+    expect(result).toEqual({ success: true });
+    expect(mockCountVariants).not.toHaveBeenCalled();
   });
 });

@@ -37,6 +37,12 @@ export async function toggleProductAvailabilityAction(
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
   try {
+    if (isAvailable) {
+      const count = await countVariantsByProductId(id);
+      if (count === 0) {
+        return { success: false, error: "バリエーションがない商品は公開できません" };
+      }
+    }
     await updateProduct(id, { isAvailable });
     revalidatePath("/admin/products");
     revalidatePath("/products");
@@ -75,7 +81,7 @@ export async function createProductWithVariantsAction(
       description: productData.description,
       stock: 0,
       stockUnit: "kg",
-      isAvailable: productData.isAvailable,
+      isAvailable: variants.length === 0 ? false : productData.isAvailable,
     });
 
     const createdVariants = await Promise.all(
@@ -109,6 +115,12 @@ export async function updateProductV2Action(
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
   try {
+    if (data.isAvailable === true) {
+      const count = await countVariantsByProductId(id);
+      if (count === 0) {
+        return { success: false, error: "バリエーションがない商品は公開できません" };
+      }
+    }
     await updateProduct(id, data as never);
     revalidatePath("/admin/products");
     revalidatePath("/products");
