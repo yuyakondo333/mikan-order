@@ -14,7 +14,7 @@ export async function searchAddressByPostalCode(
       `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`
     );
     const data = await res.json();
-    if (!data.results) return null;
+    if (!data.results || data.results.length === 0) return null;
 
     const { address1, address2, address3 } = data.results[0];
     return { prefecture: address1, city: address2 + address3 };

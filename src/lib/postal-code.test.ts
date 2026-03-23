@@ -52,6 +52,14 @@ describe("searchAddressByPostalCode", () => {
     expect(await searchAddressByPostalCode("")).toBeNull();
   });
 
+  it("APIレスポンスのresultsが空配列の場合はnullを返す", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: 200, results: [] }))
+    );
+
+    expect(await searchAddressByPostalCode("000-0000")).toBeNull();
+  });
+
   it("APIレスポンスのresultsがnullの場合はnullを返す", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify({ status: 200, results: null }))
