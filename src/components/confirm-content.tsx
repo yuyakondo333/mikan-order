@@ -5,36 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import { createOrderByVariant } from "@/app/actions/orders";
+import { getFulfillmentFromStorage, resetFulfillmentCache } from "@/lib/fulfillment-storage";
 import type { CartItemWithVariant } from "@/types";
-
-type PickupData = {
-  fulfillmentMethod: "pickup";
-  pickupDate: string;
-  pickupTimeSlot: string;
-};
-
-type DeliveryData = {
-  fulfillmentMethod: "delivery";
-  address: {
-    recipientName: string;
-    postalCode: string;
-    prefecture: string;
-    city: string;
-    line1: string;
-    line2?: string;
-  };
-};
-
-type FulfillmentData = PickupData | DeliveryData;
-
-function getFulfillmentFromStorage(): FulfillmentData | null {
-  try {
-    const stored = sessionStorage.getItem("orderFulfillment");
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
 
 function subscribe() {
   return () => {};
@@ -68,6 +40,7 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
 
       if (result.success) {
         sessionStorage.removeItem("orderFulfillment");
+        resetFulfillmentCache();
         router.push(`/complete?method=${result.fulfillmentMethod}`);
       } else {
         toast.error(result.error || "注文に失敗しました");
