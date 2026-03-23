@@ -5,6 +5,8 @@ import { getAuthenticatedUser } from "@/lib/dal";
 import { OrderDetailView } from "@/components/order-detail-view";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {
