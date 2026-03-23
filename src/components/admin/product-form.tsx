@@ -66,18 +66,21 @@ export function ProductForm({ editingProduct, onCreated, onUpdated, onCancel }: 
     setSubmitting(true);
     try {
       const stockKgNum = Number(stockKg);
-      await updateProductV2Action(editingProduct.id, {
+      const effectiveIsAvailable = noVariants ? false : isAvailable;
+      const result = await updateProductV2Action(editingProduct.id, {
         name,
         stockKg: stockKgNum,
         description: description || null,
-        isAvailable,
+        isAvailable: effectiveIsAvailable,
       });
-      onUpdated(editingProduct.id, {
-        name,
-        stockKg: stockKgNum,
-        description: description || null,
-        isAvailable,
-      });
+      if (result.success) {
+        onUpdated(editingProduct.id, {
+          name,
+          stockKg: stockKgNum,
+          description: description || null,
+          isAvailable: effectiveIsAvailable,
+        });
+      }
     } finally {
       setSubmitting(false);
     }
