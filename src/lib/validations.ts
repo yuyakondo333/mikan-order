@@ -112,6 +112,9 @@ export type ProductWithVariantsFormData = z.infer<
 >;
 
 export type AddressFormData = z.infer<typeof addressSchema>;
+export type AddressDraft = Omit<AddressFormData, "prefecture"> & {
+  prefecture: string;
+};
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
 export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;

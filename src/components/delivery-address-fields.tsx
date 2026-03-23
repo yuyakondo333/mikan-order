@@ -4,11 +4,11 @@ import { useState, useRef, useCallback } from "react";
 import { useForm, getFormProps, getInputProps, getSelectProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 import { addressSchema } from "@/lib/validations";
-import type { AddressFormData } from "@/lib/validations";
+import type { AddressFormData, AddressDraft } from "@/lib/validations";
 import { PREFECTURES } from "@/lib/constants";
 import { searchAddressByPostalCode } from "@/lib/postal-code";
 
-export function areRequiredAddressFieldsFilled(values: AddressFormData): boolean {
+export function areRequiredAddressFieldsFilled(values: AddressDraft): boolean {
   return Boolean(
     values.recipientName &&
     values.postalCode &&
@@ -25,12 +25,12 @@ function formatPostalCode(value: string): string {
 }
 
 type Props = {
-  defaultAddress: AddressFormData;
+  defaultAddress: AddressDraft;
   onValidSubmit: (data: AddressFormData) => void;
 };
 
 export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) {
-  const [currentValues, setCurrentValues] = useState<AddressFormData>(defaultAddress);
+  const [currentValues, setCurrentValues] = useState<AddressDraft>(defaultAddress);
   const [isSearching, setIsSearching] = useState(false);
   const isSubmitDisabled = !areRequiredAddressFieldsFilled(currentValues);
   const line1Ref = useRef<HTMLInputElement>(null);

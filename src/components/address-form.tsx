@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DeliveryAddressFields } from "@/components/delivery-address-fields";
 import { TIME_SLOT_OPTIONS, getPickupDateOptions } from "@/lib/constants";
-import type { AddressFormData } from "@/lib/validations";
+import type { AddressFormData, AddressDraft } from "@/lib/validations";
 import type { FulfillmentMethod, PickupTimeSlot } from "@/types";
 
 type SavedAddressRow = {
@@ -27,7 +27,7 @@ export function AddressForm({ savedAddress }: Props) {
   const [pickupTimeSlot, setPickupTimeSlot] = useState<PickupTimeSlot | "">("");
   const pickupDateOptions = getPickupDateOptions();
 
-  const defaultAddress: AddressFormData = savedAddress
+  const defaultAddress: AddressDraft = savedAddress
     ? {
         recipientName: savedAddress.recipientName ?? "",
         postalCode: savedAddress.postalCode ?? "",
