@@ -192,19 +192,7 @@ export async function createOrderByVariant(
     if (e instanceof Error && e.message.includes("在庫")) {
       return { success: false, error: e.message };
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = e as any;
-    // Drizzle ORM wraps PG errors — actual PG details are in err.cause
-    const pgErr = err?.cause ?? err;
-    const details = [
-      pgErr?.message,
-      pgErr?.code && `code:${pgErr.code}`,
-      pgErr?.detail && `detail:${pgErr.detail}`,
-      pgErr?.severity && `severity:${pgErr.severity}`,
-      pgErr?.constraint && `constraint:${pgErr.constraint}`,
-      pgErr?.routine && `routine:${pgErr.routine}`,
-    ].filter(Boolean).join(" | ");
-    return { success: false, error: `注文エラー: ${details}` };
+    return { success: false, error: "注文の処理中にエラーが発生しました" };
   }
 }
 

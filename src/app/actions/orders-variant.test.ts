@@ -398,6 +398,37 @@ describe("createOrderByVariant", () => {
     expect(result).toEqual({ success: true, fulfillmentMethod: "delivery" });
   });
 
+  // E10: DB例外時にPGエラー詳細がクライアントに漏洩しない
+  it("DB例外時にPGエラー詳細を含まない汎用メッセージを返す", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+
+    const pgError = new Error("insert or update on table \"orders\" violates foreign key constraint");
+    Object.assign(pgError, {
+      code: "23503",
+      detail: 'Key (user_id)=(user-1) is not present in table "users".',
+      severity: "ERROR",
+      constraint: "orders_user_id_fkey",
+      routine: "ri_ReportViolation",
+    });
+    mockDbTransaction.mockRejectedValue(pgError);
+
+    const result = await createOrderByVariant(pickupFulfillment);
+
+    expect(result.success).toBe(false);
+    const error = (result as { error: string }).error;
+    // PG詳細が含まれていないことを検証
+    expect(error).not.toContain("23503");
+    expect(error).not.toContain("constraint");
+    expect(error).not.toContain("orders_user_id_fkey");
+    expect(error).not.toContain("ri_ReportViolation");
+    expect(error).not.toContain("detail");
+    expect(error).not.toContain("severity");
+    // 汎用メッセージであること
+    expect(error).toMatch(/エラー/);
+  });
+
   // E14: 合計金額が variant.priceJpy × quantity の合計で計算される
   it("合計金額が正しく計算される", async () => {
     mockGetAuth.mockResolvedValue(mockUser);
