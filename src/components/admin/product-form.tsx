@@ -22,6 +22,7 @@ export function ProductForm({ editingProduct, onCreated, onUpdated, onCancel }: 
   const [isAvailable, setIsAvailable] = useState(editingProduct?.isAvailable ?? true);
   const [variants, setVariants] = useState<VariantDraft[]>([{ ...emptyVariant }]);
   const [submitting, setSubmitting] = useState(false);
+  const noVariants = editingProduct !== undefined && editingProduct.variants.length === 0;
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -136,12 +137,18 @@ export function ProductForm({ editingProduct, onCreated, onUpdated, onCancel }: 
       <label className="flex items-center gap-3 text-lg text-gray-900">
         <input
           type="checkbox"
-          checked={isAvailable}
+          checked={noVariants ? false : isAvailable}
           onChange={(e) => setIsAvailable(e.target.checked)}
+          disabled={noVariants}
           className="h-6 w-6"
         />
         公開する
       </label>
+      {noVariants && (
+        <p className="text-base text-orange-600">
+          バリエーションを追加すると公開できます
+        </p>
+      )}
 
       {/* バリエーション（新規作成時のみ） */}
       {!editingProduct && (

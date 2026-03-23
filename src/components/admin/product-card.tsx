@@ -212,11 +212,12 @@ export function ProductCard({
         <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
         <button
           onClick={handleToggleAvailability}
+          disabled={!product.isAvailable && product.variants.length === 0}
           className={`cursor-pointer rounded-full px-4 py-2 text-base font-bold ${
             product.isAvailable
               ? "bg-green-100 text-green-800"
               : "bg-gray-200 text-gray-700"
-          }`}
+          } disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {product.isAvailable ? "販売中" : "非公開"}
         </button>
@@ -234,6 +235,11 @@ export function ProductCard({
           バリエーション <span className="text-gray-900">{product.variants.length}件</span>
         </span>
       </div>
+      {product.variants.length === 0 && (
+        <p className="mt-2 text-base text-orange-600">
+          バリエーションを追加すると公開できます
+        </p>
+      )}
       {product.description && (
         <p className="mt-3 text-lg leading-relaxed text-gray-900">
           {product.description}
