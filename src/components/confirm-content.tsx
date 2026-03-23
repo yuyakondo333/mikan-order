@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
 import { createOrderByVariant } from "@/app/actions/orders";
-import { getFulfillmentFromStorage } from "@/lib/fulfillment-storage";
+import { getFulfillmentFromStorage, resetFulfillmentCache } from "@/lib/fulfillment-storage";
 import type { CartItemWithVariant } from "@/types";
 
 function subscribe() {
@@ -40,6 +40,7 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
 
       if (result.success) {
         sessionStorage.removeItem("orderFulfillment");
+        resetFulfillmentCache();
         router.push(`/complete?method=${result.fulfillmentMethod}`);
       } else {
         toast.error(result.error || "注文に失敗しました");

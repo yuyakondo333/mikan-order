@@ -1,22 +1,6 @@
-type PickupData = {
-  fulfillmentMethod: "pickup";
-  pickupDate: string;
-  pickupTimeSlot: string;
-};
+import type { FulfillmentData } from "@/lib/validations";
 
-type DeliveryData = {
-  fulfillmentMethod: "delivery";
-  address: {
-    recipientName: string;
-    postalCode: string;
-    prefecture: string;
-    city: string;
-    line1: string;
-    line2?: string;
-  };
-};
-
-export type FulfillmentData = PickupData | DeliveryData;
+export type { FulfillmentData };
 
 let cachedRaw: string | null = null;
 let cachedParsed: FulfillmentData | null = null;

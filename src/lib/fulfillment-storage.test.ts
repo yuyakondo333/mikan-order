@@ -8,6 +8,7 @@ describe("getFulfillmentFromStorage", () => {
   beforeEach(() => {
     resetFulfillmentCache();
     sessionStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it("sessionStorageにデータがある場合、連続呼び出しで同一オブジェクト参照を返す", () => {
@@ -45,7 +46,5 @@ describe("getFulfillmentFromStorage", () => {
     });
 
     expect(getFulfillmentFromStorage()).toBeNull();
-
-    vi.restoreAllMocks();
   });
 });
