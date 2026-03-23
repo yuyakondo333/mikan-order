@@ -3,6 +3,8 @@ import { verifySession } from "@/lib/dal";
 import { getLatestAddressByLineUserId } from "@/db/queries/addresses";
 import { AddressForm } from "@/components/address-form";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "受取方法",
 };

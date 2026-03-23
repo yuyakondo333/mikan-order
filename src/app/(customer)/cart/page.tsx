@@ -4,6 +4,8 @@ import { getCartWithVariants } from "@/db/queries/cart";
 import { getAuthenticatedUser } from "@/lib/dal";
 import type { CartItemWithVariant } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "カート",
 };

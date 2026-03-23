@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getAvailableProductsWithVariants } from "@/db/queries/products";
 import { ProductList } from "@/components/product-list";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "商品一覧",
 };
