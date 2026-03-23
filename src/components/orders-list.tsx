@@ -29,8 +29,8 @@ export function OrdersList({ orders }: Props) {
               </div>
               {order.items.length > 0 && (
                 <div className="mt-2 space-y-1">
-                  {order.items.map((item, i) => (
-                    <p key={i} className="text-lg font-bold text-gray-800">
+                  {order.items.map((item) => (
+                    <p key={item.productName} className="text-lg font-bold text-gray-800">
                       {item.productName} ×{item.quantity}
                     </p>
                   ))}
