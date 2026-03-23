@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   orderStatusSchema,
+  addressSchema,
   variantSchema,
   newProductSchema,
   productWithVariantsSchema,
@@ -26,6 +27,41 @@ describe("orderStatusSchema", () => {
 
   it("無効な値を拒否する", () => {
     const result = orderStatusSchema.safeParse("invalid");
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("addressSchema.prefecture", () => {
+  it("有効な都道府県（東京都）を受け入れる", () => {
+    const result = addressSchema.safeParse({
+      recipientName: "田中太郎",
+      postalCode: "123-4567",
+      prefecture: "東京都",
+      city: "渋谷区",
+      line1: "1-2-3",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("無効な都道府県文字列を拒否する", () => {
+    const result = addressSchema.safeParse({
+      recipientName: "田中太郎",
+      postalCode: "123-4567",
+      prefecture: "存在しない県",
+      city: "渋谷区",
+      line1: "1-2-3",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("XSSペイロードを都道府県として拒否する", () => {
+    const result = addressSchema.safeParse({
+      recipientName: "田中太郎",
+      postalCode: "123-4567",
+      prefecture: "<script>alert(1)</script>",
+      city: "渋谷区",
+      line1: "1-2-3",
+    });
     expect(result.success).toBe(false);
   });
 });
