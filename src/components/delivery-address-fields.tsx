@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, getFormProps, getInputProps } from "@conform-to/react";
+import { useState, useRef, useCallback } from "react";
+import { useForm, getFormProps, getInputProps, getSelectProps } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 import { addressSchema } from "@/lib/validations";
 import type { AddressFormData } from "@/lib/validations";
+import { PREFECTURES } from "@/lib/constants";
+import { searchAddressByPostalCode } from "@/lib/postal-code";
 
 export function areRequiredAddressFieldsFilled(values: AddressFormData): boolean {
   return Boolean(
@@ -16,6 +18,12 @@ export function areRequiredAddressFieldsFilled(values: AddressFormData): boolean
   );
 }
 
+function formatPostalCode(value: string): string {
+  const digits = value.replace(/[^0-9]/g, "");
+  if (digits.length <= 3) return digits;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}`;
+}
+
 type Props = {
   defaultAddress: AddressFormData;
   onValidSubmit: (data: AddressFormData) => void;
@@ -23,9 +31,15 @@ type Props = {
 
 export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) {
   const [currentValues, setCurrentValues] = useState<AddressFormData>(defaultAddress);
+  const [isSearching, setIsSearching] = useState(false);
   const isSubmitDisabled = !areRequiredAddressFieldsFilled(currentValues);
+  const line1Ref = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: keyof AddressFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentValues(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSelectChange = (field: keyof AddressFormData) => (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentValues(prev => ({ ...prev, [field]: e.target.value }));
   };
 
@@ -44,6 +58,43 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
       }
     },
   });
+
+  const lookupAddress = useCallback(async (postalCode: string) => {
+    const digits = postalCode.replace(/-/g, "");
+    if (digits.length !== 7) return;
+
+    setIsSearching(true);
+    try {
+      const result = await searchAddressByPostalCode(postalCode);
+      if (!result) return;
+
+      form.update({ name: fields.prefecture.name, value: result.prefecture });
+      form.update({ name: fields.city.name, value: result.city });
+
+      setCurrentValues(prev => ({
+        ...prev,
+        prefecture: result.prefecture,
+        city: result.city,
+      }));
+
+      line1Ref.current?.focus();
+    } finally {
+      setIsSearching(false);
+    }
+  }, [form, fields.prefecture.name, fields.city.name]);
+
+  const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPostalCode(e.target.value);
+    e.target.value = formatted;
+
+    form.update({ name: fields.postalCode.name, value: formatted });
+    setCurrentValues(prev => ({ ...prev, postalCode: formatted }));
+
+    const digits = formatted.replace(/-/g, "");
+    if (digits.length === 7) {
+      lookupAddress(formatted);
+    }
+  };
 
   return (
     <form {...getFormProps(form)} className="space-y-4">
@@ -64,12 +115,21 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         <label htmlFor={fields.postalCode.id} className="block text-sm font-medium text-gray-900">
           郵便番号
         </label>
-        <input
-          {...getInputProps(fields.postalCode, { type: "text" })}
-          onChange={handleInputChange("postalCode")}
-          placeholder="123-4567"
-          className="mt-1 w-full rounded border p-2"
-        />
+        <div className="relative">
+          <input
+            {...getInputProps(fields.postalCode, { type: "text" })}
+            onChange={handlePostalCodeChange}
+            inputMode="numeric"
+            placeholder="123-4567"
+            maxLength={8}
+            className="mt-1 w-full rounded border p-2"
+          />
+          {isSearching && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+              検索中...
+            </span>
+          )}
+        </div>
         {fields.postalCode.errors && (
           <p className="mt-1 text-xs text-red-600">{fields.postalCode.errors[0]}</p>
         )}
@@ -78,11 +138,18 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         <label htmlFor={fields.prefecture.id} className="block text-sm font-medium text-gray-900">
           都道府県
         </label>
-        <input
-          {...getInputProps(fields.prefecture, { type: "text" })}
-          onChange={handleInputChange("prefecture")}
-          className="mt-1 w-full rounded border p-2"
-        />
+        <select
+          {...getSelectProps(fields.prefecture)}
+          onChange={handleSelectChange("prefecture")}
+          className="mt-1 w-full rounded border bg-white p-2"
+        >
+          <option value="">選択してください</option>
+          {PREFECTURES.map((pref) => (
+            <option key={pref} value={pref}>
+              {pref}
+            </option>
+          ))}
+        </select>
         {fields.prefecture.errors && (
           <p className="mt-1 text-xs text-red-600">{fields.prefecture.errors[0]}</p>
         )}
@@ -106,6 +173,7 @@ export function DeliveryAddressFields({ defaultAddress, onValidSubmit }: Props) 
         </label>
         <input
           {...getInputProps(fields.line1, { type: "text" })}
+          ref={line1Ref}
           onChange={handleInputChange("line1")}
           className="mt-1 w-full rounded border p-2"
         />
