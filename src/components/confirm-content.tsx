@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
@@ -20,6 +20,8 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
     () => null
   );
   const [isPending, startTransition] = useTransition();
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (!fulfillment) {
@@ -33,16 +35,21 @@ export function ConfirmContent({ items }: { items: CartItemWithVariant[] }) {
   );
 
   function handleSubmit() {
-    if (!fulfillment) return;
+    if (!fulfillment || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     startTransition(async () => {
-      const result = await createOrderByVariant(fulfillment);
+      const result = await createOrderByVariant(
+        fulfillment,
+        idempotencyKeyRef.current
+      );
 
       if (result.success) {
         sessionStorage.removeItem("orderFulfillment");
         resetFulfillmentCache();
         router.push(`/complete?method=${result.fulfillmentMethod}`);
       } else {
+        isSubmittingRef.current = false;
         toast.error(result.error || "注文に失敗しました");
       }
     });

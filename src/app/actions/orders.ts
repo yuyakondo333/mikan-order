@@ -18,7 +18,7 @@ import {
   sendOrderConfirmationWithBankTransfer,
 } from "@/lib/line";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
-import { fulfillmentSchema, orderStatusSchema } from "@/lib/validations";
+import { fulfillmentSchema, idempotencyKeySchema, orderStatusSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { db } from "@/db";
@@ -30,10 +30,16 @@ type OrderActionResult =
   | { success: false; error: string };
 
 export async function createOrderByVariant(
-  fulfillmentData: unknown
+  fulfillmentData: unknown,
+  idempotencyKey: unknown
 ): Promise<OrderActionResult> {
   const user = await getAuthenticatedUser();
   if (!user) return { success: false, error: "認証が必要です" };
+
+  const parsedKey = idempotencyKeySchema.safeParse(idempotencyKey);
+  if (!parsedKey.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
+  }
 
   const parsed = fulfillmentSchema.safeParse(fulfillmentData);
   if (!parsed.success) {
@@ -126,6 +132,7 @@ export async function createOrderByVariant(
           addressId,
           status: initialStatus,
           totalJpy,
+          idempotencyKey: parsedKey.data,
         })
         .returning();
 
@@ -186,6 +193,21 @@ export async function createOrderByVariant(
 
     return { success: true, fulfillmentMethod: orderData.fulfillmentMethod };
   } catch (e) {
+    // idempotency key 重複 → 既存注文のsuccess結果を返す
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pgError = e as any;
+    if (
+      pgError?.code === "23505" &&
+      pgError?.constraint === "orders_idempotency_key_unique"
+    ) {
+      const existing = await db.query.orders.findFirst({
+        where: eq(orders.idempotencyKey, parsedKey.data),
+      });
+      if (existing) {
+        return { success: true, fulfillmentMethod: existing.fulfillmentMethod };
+      }
+    }
+
     console.error("Failed to create order:", e);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((e as any)?.cause) console.error("PG cause:", (e as any).cause);

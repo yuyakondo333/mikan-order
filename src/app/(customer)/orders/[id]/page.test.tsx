@@ -68,6 +68,7 @@ function makeMockOrder(overrides: Record<string, unknown> = {}) {
     pickupTimeSlot: null,
     note: null,
     addressId: null,
+    idempotencyKey: null,
     ...overrides,
   };
 }

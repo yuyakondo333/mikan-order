@@ -71,6 +71,13 @@
       "when": 1774182876583,
       "tag": "0009_lyrical_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774274722092,
+      "tag": "0010_burly_nomad",
+      "breakpoints": true
     }
   ]
 }

@@ -119,3 +119,6 @@ export type CreateOrderData = z.infer<typeof createOrderSchema>;
 export type ProductFormData = z.infer<typeof productSchema>;
 export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;
 export type FulfillmentData = z.infer<typeof fulfillmentSchema>;
+
+// --- Idempotency Key ---
+export const idempotencyKeySchema = z.string().uuid();

@@ -28,7 +28,10 @@ vi.mock("@/db/queries/payment-settings", () => ({
 vi.mock("@/db", () => ({
   db: {
     transaction: vi.fn(),
-    query: { products: { findFirst: vi.fn() } },
+    query: {
+      products: { findFirst: vi.fn() },
+      orders: { findFirst: vi.fn() },
+    },
   },
 }));
 
@@ -56,6 +59,7 @@ import { revalidatePath } from "next/cache";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
 import {
   sendOrderConfirmationWithBankTransfer,
+  sendOrderConfirmationWithPickup,
   sendShippingNotification,
 } from "@/lib/line";
 import { db } from "@/db";
@@ -83,6 +87,8 @@ const mockUser = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+const validIdempotencyKey = "550e8400-e29b-41d4-a716-446655440000";
 
 const pickupFulfillment = {
   fulfillmentMethod: "pickup" as const,
@@ -145,7 +151,7 @@ describe("createOrderByVariant", () => {
   it("未認証でエラーを返す", async () => {
     mockGetAuth.mockResolvedValue(null);
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result).toEqual({ success: false, error: "認証が必要です" });
   });
@@ -155,7 +161,7 @@ describe("createOrderByVariant", () => {
     mockGetAuth.mockResolvedValue(mockUser);
     mockGetCartWithVariants.mockResolvedValue([]);
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result).toEqual({ success: false, error: "カートが空です" });
   });
@@ -167,7 +173,7 @@ describe("createOrderByVariant", () => {
       makeCartItem({ productIsAvailable: false }),
     ]);
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("販売停止");
@@ -180,7 +186,7 @@ describe("createOrderByVariant", () => {
       makeCartItem({ variantIsAvailable: false }),
     ]);
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("販売停止");
@@ -212,7 +218,7 @@ describe("createOrderByVariant", () => {
       return callback(tx as never);
     });
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
   });
@@ -229,7 +235,7 @@ describe("createOrderByVariant", () => {
       .mockReturnValueOnce(6)  // 3kg×2
       .mockReturnValueOnce(5); // 5kg×1
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("在庫");
@@ -266,7 +272,7 @@ describe("createOrderByVariant", () => {
       return callback(tx as never);
     });
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
   });
@@ -285,7 +291,7 @@ describe("createOrderByVariant", () => {
       return callback(tx as never);
     });
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result.success).toBe(false);
     expect((result as { error: string }).error).toContain("在庫");
@@ -348,7 +354,7 @@ describe("createOrderByVariant", () => {
     });
     setupDeliveryTransaction();
 
-    await createOrderByVariant(deliveryFulfillment);
+    await createOrderByVariant(deliveryFulfillment, validIdempotencyKey);
 
     expect(mockSendBankTransfer).toHaveBeenCalledWith(
       "U1234567890",
@@ -370,7 +376,7 @@ describe("createOrderByVariant", () => {
     mockGetPaymentSettings.mockResolvedValue(null as never);
     setupDeliveryTransaction();
 
-    await createOrderByVariant(deliveryFulfillment);
+    await createOrderByVariant(deliveryFulfillment, validIdempotencyKey);
 
     expect(mockSendBankTransfer).toHaveBeenCalledWith(
       "U1234567890",
@@ -393,7 +399,7 @@ describe("createOrderByVariant", () => {
     setupDeliveryTransaction();
     mockSendBankTransfer.mockRejectedValue(new Error("LINE API error"));
 
-    const result = await createOrderByVariant(deliveryFulfillment);
+    const result = await createOrderByVariant(deliveryFulfillment, validIdempotencyKey);
 
     expect(result).toEqual({ success: true, fulfillmentMethod: "delivery" });
   });
@@ -414,7 +420,7 @@ describe("createOrderByVariant", () => {
     });
     mockDbTransaction.mockRejectedValue(pgError);
 
-    const result = await createOrderByVariant(pickupFulfillment);
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     expect(result.success).toBe(false);
     const error = (result as { error: string }).error;
@@ -462,10 +468,218 @@ describe("createOrderByVariant", () => {
       return callback(tx as never);
     });
 
-    await createOrderByVariant(pickupFulfillment);
+    await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
 
     // 1800×2 + 2800×1 = 6400
     expect(capturedTotalJpy).toBe(6400);
+  });
+
+  // S1: pickup注文 + 有効なidempotencyKey → 成功＆INSERT valuesにidempotencyKey含む
+  it("注文成功時にorders INSERTにidempotencyKeyが含まれる", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+
+    let capturedIdempotencyKey: string | undefined;
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "p1" }]),
+      });
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          return {
+            values: vi.fn().mockImplementation((data: Record<string, unknown>) => {
+              capturedIdempotencyKey = data.idempotencyKey as string;
+              return {
+                returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+              };
+            }),
+          };
+        }
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
+      return callback(tx as never);
+    });
+
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+
+    expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
+    expect(capturedIdempotencyKey).toBe(validIdempotencyKey);
+  });
+
+  // S3: idempotencyKeyが空文字 → バリデーションエラー
+  it("idempotencyKeyが空文字でバリデーションエラーを返す", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+
+    const result = await createOrderByVariant(pickupFulfillment, "");
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+  });
+
+  // S4: idempotencyKeyがundefined → バリデーションエラー
+  it("idempotencyKeyがundefinedでバリデーションエラーを返す", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+
+    const result = await createOrderByVariant(pickupFulfillment, undefined as never);
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+  });
+
+  // S5: idempotencyKeyが非UUID文字列 → バリデーションエラー
+  it("idempotencyKeyが非UUID文字列でバリデーションエラーを返す", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+
+    const result = await createOrderByVariant(pickupFulfillment, "not-a-uuid");
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+  });
+
+  // Q2+Q3: idempotencyKeyがnull/number → バリデーションエラー
+  it.each([
+    ["null", null],
+    ["number", 12345],
+  ])("idempotencyKeyが%sでバリデーションエラーを返す", async (_label, value) => {
+    mockGetAuth.mockResolvedValue(mockUser);
+
+    const result = await createOrderByVariant(pickupFulfillment, value as never);
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+  });
+
+  // S6: 重複idempotencyKey → success + fulfillmentMethod返却 + LINE通知なし
+  it("重複idempotencyKeyで既存注文のsuccess結果を返しLINE通知を送らない", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+
+    // unique constraint violation (PG error code 23505)
+    const uniqueError = new Error(
+      'duplicate key value violates unique constraint "orders_idempotency_key_unique"'
+    );
+    Object.assign(uniqueError, {
+      code: "23505",
+      constraint: "orders_idempotency_key_unique",
+    });
+    mockDbTransaction.mockRejectedValue(uniqueError);
+
+    // 既存注文の検索結果
+    vi.mocked(db.query.orders.findFirst).mockResolvedValue({
+      id: "existing-order-1",
+      fulfillmentMethod: "pickup",
+    } as never);
+
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+
+    expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
+    // LINE通知が送られないことを確認
+    expect(mockSendBankTransfer).not.toHaveBeenCalled();
+    expect(vi.mocked(sendOrderConfirmationWithPickup)).not.toHaveBeenCalled();
+  });
+
+  // C3: 重複キー検知時、PGエラー詳細がクライアントに漏洩しない
+  it("重複キー検知時にPGエラー詳細を含まないレスポンスを返す", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+
+    const uniqueError = new Error(
+      'duplicate key value violates unique constraint "orders_idempotency_key_unique"'
+    );
+    Object.assign(uniqueError, {
+      code: "23505",
+      detail: 'Key (idempotency_key)=(550e8400-e29b-41d4-a716-446655440000) already exists.',
+      constraint: "orders_idempotency_key_unique",
+    });
+    mockDbTransaction.mockRejectedValue(uniqueError);
+
+    vi.mocked(db.query.orders.findFirst).mockResolvedValue({
+      id: "existing-order-1",
+      fulfillmentMethod: "pickup",
+    } as never);
+
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+
+    // success結果であること（エラーメッセージにPG詳細が含まれないことを暗黙的に検証）
+    expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
+    // 明示的にレスポンスにPG詳細が含まれないことを確認
+    const json = JSON.stringify(result);
+    expect(json).not.toContain("23505");
+    expect(json).not.toContain("constraint");
+    expect(json).not.toContain("already exists");
+  });
+
+  // Q1: 注文失敗（カート空）後に同じidempotencyKeyで再送信 → 成功
+  it("カート空で失敗後に同じidempotencyKeyで再送信すると成功する", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+
+    // 1回目: カート空で失敗
+    mockGetCartWithVariants.mockResolvedValue([]);
+    const result1 = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+    expect(result1).toEqual({ success: false, error: "カートが空です" });
+
+    // 2回目: カートに商品あり、同じキーで成功
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "p1" }]),
+      });
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+            }),
+          };
+        }
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
+      return callback(tx as never);
+    });
+
+    const result2 = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+    expect(result2).toEqual({ success: true, fulfillmentMethod: "pickup" });
+  });
+
+  // S7: 異なるidempotencyKeyで独立した注文（各キーでトランザクション実行される）
+  it.each([
+    ["a1111111-1111-4111-a111-111111111111"],
+    ["b2222222-2222-4222-b222-222222222222"],
+  ])("idempotencyKey '%s' でそれぞれ独立して注文成功する", async (key) => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockGetCartWithVariants.mockResolvedValue([makeCartItem()]);
+    mockCalcConsumption.mockReturnValue(6);
+
+    mockDbTransaction.mockImplementation(async (callback) => {
+      const { tx, mockWhere } = createMockTx();
+      mockWhere.mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "p1" }]),
+      });
+      let insertCall = 0;
+      tx.insert = vi.fn().mockImplementation(() => {
+        insertCall++;
+        if (insertCall === 1) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([{ id: "order-1" }]),
+            }),
+          };
+        }
+        return { values: vi.fn().mockResolvedValue(undefined) };
+      });
+      return callback(tx as never);
+    });
+
+    const result = await createOrderByVariant(pickupFulfillment, key);
+
+    expect(result).toEqual({ success: true, fulfillmentMethod: "pickup" });
+    expect(mockDbTransaction).toHaveBeenCalledTimes(1);
   });
 });
 
