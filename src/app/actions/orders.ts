@@ -190,8 +190,17 @@ export async function createOrderByVariant(
     if (e instanceof Error && e.message.includes("在庫")) {
       return { success: false, error: e.message };
     }
-    const debugMsg = e instanceof Error ? e.message : String(e);
-    return { success: false, error: `注文の作成に失敗しました: ${debugMsg}` };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const err = e as any;
+    const details = [
+      err?.message,
+      err?.code && `code:${err.code}`,
+      err?.detail && `detail:${err.detail}`,
+      err?.severity && `severity:${err.severity}`,
+      err?.constraint && `constraint:${err.constraint}`,
+      err?.routine && `routine:${err.routine}`,
+    ].filter(Boolean).join(" | ");
+    return { success: false, error: `注文エラー: ${details}` };
   }
 }
 
