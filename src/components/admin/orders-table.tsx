@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { updateOrderStatusByVariantAction } from "@/app/actions/orders";
 import { TIME_SLOT_LABELS, formatPickupDate } from "@/lib/constants";
-import type { Order, Address, User } from "@/types";
+import type { Order, Address, User, OrderSummaryItem } from "@/types";
 
 const pickupStatuses = [
   "pending",
@@ -58,6 +58,7 @@ type SortOrder = "newest" | "oldest";
 type OrderWithRelations = Order & {
   user?: User | null;
   address?: Address | null;
+  items: OrderSummaryItem[];
 };
 
 export function AdminOrdersTable({
@@ -175,6 +176,17 @@ export function AdminOrdersTable({
                   <OrderStatusBadge status={order.status} />
                 </div>
               </div>
+
+              {/* 商品サマリー */}
+              {order.items.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {order.items.map((item, index) => (
+                    <p key={index} className="text-lg font-bold text-gray-800">
+                      {item.productName} ×{item.quantity}
+                    </p>
+                  ))}
+                </div>
+              )}
 
               {/* 受取詳細 */}
               <div className="mt-3 text-lg text-gray-900">
