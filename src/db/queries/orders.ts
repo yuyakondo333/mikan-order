@@ -7,13 +7,27 @@ import { and, eq } from "drizzle-orm";
 import type { OrderStatus } from "@/types";
 
 export async function getAllOrders() {
-  return db.query.orders.findMany({
+  const result = await db.query.orders.findMany({
     with: {
       user: true,
       address: true,
+      items: {
+        columns: {
+          productName: true,
+          quantity: true,
+        },
+      },
     },
     orderBy: (orders, { desc }) => [desc(orders.createdAt)],
   });
+
+  return result.map((order) => ({
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      productName: item.productName ?? "不明な商品",
+    })),
+  }));
 }
 
 export async function getOrdersByLineUserId(lineUserId: string) {
