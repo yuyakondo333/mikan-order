@@ -190,7 +190,8 @@ export async function createOrderByVariant(
     if (e instanceof Error && e.message.includes("在庫")) {
       return { success: false, error: e.message };
     }
-    return { success: false, error: "注文の作成に失敗しました" };
+    const debugMsg = e instanceof Error ? e.message : String(e);
+    return { success: false, error: `注文の作成に失敗しました: ${debugMsg}` };
   }
 }
 
