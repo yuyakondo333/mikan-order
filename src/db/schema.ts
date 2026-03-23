@@ -121,6 +121,7 @@ export const orders = pgTable("orders", {
   addressId: uuid("address_id").references(() => addresses.id),
   status: orderStatusEnum("status").default("pending").notNull(),
   totalJpy: integer("total_jpy").notNull(),
+  idempotencyKey: text("idempotency_key").unique(), // nullable: 既存注文レコードとの後方互換のためNULL許容
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

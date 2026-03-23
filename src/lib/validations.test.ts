@@ -5,6 +5,7 @@ import {
   variantSchema,
   newProductSchema,
   productWithVariantsSchema,
+  idempotencyKeySchema,
 } from "./validations";
 
 describe("orderStatusSchema", () => {
@@ -226,6 +227,28 @@ describe("newProductSchema", () => {
       stockKg: 0.5,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("idempotencyKeySchema", () => {
+  // V1: 有効なUUID v4 → pass
+  it("有効なUUID v4文字列を受け入れる", () => {
+    const result = idempotencyKeySchema.safeParse(
+      "550e8400-e29b-41d4-a716-446655440000"
+    );
+    expect(result.success).toBe(true);
+  });
+
+  // V2: 空文字 → fail
+  it("空文字を拒否する", () => {
+    const result = idempotencyKeySchema.safeParse("");
+    expect(result.success).toBe(false);
+  });
+
+  // V3: 非UUID文字列 → fail
+  it("非UUID文字列を拒否する", () => {
+    const result = idempotencyKeySchema.safeParse("not-a-uuid");
+    expect(result.success).toBe(false);
   });
 });
 
