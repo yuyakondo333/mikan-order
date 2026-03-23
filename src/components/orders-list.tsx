@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import type { Order } from "@/types";
+import type { OrderWithItems } from "@/types";
 
 type Props = {
-  orders: Order[];
+  orders: OrderWithItems[];
 };
 
 export function OrdersList({ orders }: Props) {
@@ -27,6 +27,15 @@ export function OrdersList({ orders }: Props) {
                 </span>
                 <OrderStatusBadge status={order.status} />
               </div>
+              {order.items.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {order.items.map((item, i) => (
+                    <p key={i} className="text-lg font-bold text-gray-800">
+                      {item.productName} ×{item.quantity}
+                    </p>
+                  ))}
+                </div>
+              )}
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-lg font-bold">
                   ¥{order.totalJpy.toLocaleString()}

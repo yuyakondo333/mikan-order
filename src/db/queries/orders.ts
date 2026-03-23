@@ -22,7 +22,26 @@ export async function getOrdersByLineUserId(lineUserId: string) {
   });
   if (!user) return [];
 
-  return db.select().from(orders).where(eq(orders.userId, user.id));
+  const result = await db.query.orders.findMany({
+    where: eq(orders.userId, user.id),
+    with: {
+      items: {
+        columns: {
+          productName: true,
+          quantity: true,
+        },
+      },
+    },
+    orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+  });
+
+  return result.map((order) => ({
+    ...order,
+    items: order.items.map((item) => ({
+      ...item,
+      productName: item.productName ?? "不明な商品",
+    })),
+  }));
 }
 
 /**

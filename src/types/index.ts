@@ -63,6 +63,15 @@ export type Order = {
   updatedAt: Date | string;
 };
 
+export type OrderSummaryItem = {
+  productName: string;
+  quantity: number;
+};
+
+export type OrderWithItems = Order & {
+  items: OrderSummaryItem[];
+};
+
 export type Address = {
   id: string;
   userId: string;
