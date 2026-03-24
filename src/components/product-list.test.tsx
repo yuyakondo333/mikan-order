@@ -89,9 +89,6 @@ describe("ProductList", () => {
     });
 
     // 「カートに追加」ボタンをクリック
-    const addButton = container.querySelector(
-      'button'
-    );
     const buttons = Array.from(container.querySelectorAll("button"));
     const cartButton = buttons.find((b) =>
       b.textContent?.includes("カートに追加")

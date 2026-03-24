@@ -385,6 +385,17 @@ describe("updateCartItemByVariant", () => {
       error: "数量は1以上の整数で指定してください",
     });
   });
+
+  it("NaNでエラーを返す", async () => {
+    setupAuth();
+
+    const result = await updateCartItemByVariant("v1", NaN);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
 });
 
 // =========================================
