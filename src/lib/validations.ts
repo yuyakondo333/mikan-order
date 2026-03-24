@@ -86,7 +86,7 @@ export const variantSchema = z.object({
   label: z.string().min(1, "ラベルを入力してください"),
   weightKg: z
     .string()
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
+    .refine((v) => { const n = Number(v); return !isNaN(n) && n > 0; }, {
       message: "重量は0より大きい値を入力してください",
     }),
   priceJpy: z.number().int("価格は整数を入力してください").positive("価格は1以上の整数を入力してください"),
@@ -110,14 +110,11 @@ export const updateProductSchema = z.object({
   isAvailable: z.boolean(),
 }).partial();
 
+// variantSchemaのshapeからデフォルト値を除いてpartial化
 export const updateVariantSchema = z.object({
-  label: z.string().min(1, "ラベルを入力してください"),
-  weightKg: z
-    .string()
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
-      message: "重量は0より大きい値を入力してください",
-    }),
-  priceJpy: z.number().int("価格は整数を入力してください").positive("価格は1以上の整数を入力してください"),
+  label: variantSchema.shape.label,
+  weightKg: variantSchema.shape.weightKg,
+  priceJpy: variantSchema.shape.priceJpy,
   isGiftOnly: z.boolean(),
   displayOrder: z.number().int().min(0),
   isAvailable: z.boolean(),
@@ -143,8 +140,6 @@ export type ProductFormData = z.infer<typeof productSchema>;
 export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;
 export type FulfillmentData = z.infer<typeof fulfillmentSchema>;
 
-// --- Idempotency Key ---
-export const idempotencyKeySchema = z.string().uuid();
-
 // --- UUID ---
 export const uuidSchema = z.string().uuid();
+export const idempotencyKeySchema = uuidSchema;

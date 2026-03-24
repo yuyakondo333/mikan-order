@@ -65,9 +65,6 @@ function setupNoAdmin() {
   mockAuth.mockResolvedValue(null);
 }
 
-// ============================================================
-// deleteProductAction
-// ============================================================
 describe("deleteProductAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -102,9 +99,6 @@ describe("deleteProductAction", () => {
   });
 });
 
-// ============================================================
-// createProductWithVariantsAction
-// ============================================================
 describe("createProductWithVariantsAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -213,9 +207,6 @@ describe("createProductWithVariantsAction", () => {
   });
 });
 
-// ============================================================
-// updateProductV2Action
-// ============================================================
 describe("updateProductV2Action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -319,9 +310,6 @@ describe("updateProductV2Action", () => {
   });
 });
 
-// ============================================================
-// createVariantAction
-// ============================================================
 describe("createVariantAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -397,9 +385,6 @@ describe("createVariantAction", () => {
   });
 });
 
-// ============================================================
-// updateVariantAction
-// ============================================================
 describe("updateVariantAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -445,9 +430,6 @@ describe("updateVariantAction", () => {
   });
 });
 
-// ============================================================
-// deleteVariantAction
-// ============================================================
 describe("deleteVariantAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -500,9 +482,6 @@ describe("deleteVariantAction", () => {
   });
 });
 
-// ============================================================
-// toggleProductAvailabilityAction
-// ============================================================
 describe("toggleProductAvailabilityAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
