@@ -135,14 +135,16 @@ export async function updateProductV2Action(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
+  const validData = parsed.data;
+
   try {
-    if (data.isAvailable === true) {
+    if (validData.isAvailable === true) {
       const count = await countVariantsByProductId(id);
       if (count === 0) {
         return { success: false, error: "バリエーションがない商品は公開できません" };
       }
     }
-    await updateProduct(id, data as never);
+    await updateProduct(id, validData);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
