@@ -39,8 +39,8 @@ export async function addToCartByVariant(
   const user = await getAuthenticatedUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
-  if (quantity < 1) {
-    return { success: false, error: "数量は1以上を指定してください" };
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { success: false, error: "数量は1以上の整数で指定してください" };
   }
 
   const variant = await db.query.productVariants.findFirst({
@@ -85,8 +85,8 @@ export async function updateCartItemByVariant(
     const user = await getAuthenticatedUser();
     if (!user) return { success: false, error: "認証が必要です" };
 
-    if (quantity < 1) {
-      return { success: false, error: "数量は1以上を指定してください" };
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return { success: false, error: "数量は1以上の整数で指定してください" };
     }
 
     const variant = await db.query.productVariants.findFirst({

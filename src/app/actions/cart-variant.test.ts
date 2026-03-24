@@ -242,7 +242,43 @@ describe("addToCartByVariant", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "数量は1以上を指定してください",
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
+
+  // 小数値（正の小数）でエラーを返す
+  it("小数値でエラーを返す", async () => {
+    setupAuth();
+
+    const result = await addToCartByVariant("v1", 1.5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
+
+  // 負の整数でエラーを返す
+  it("負の整数でエラーを返す", async () => {
+    setupAuth();
+
+    const result = await addToCartByVariant("v1", -1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
+
+  // NaNでエラーを返す
+  it("NaNでエラーを返す", async () => {
+    setupAuth();
+
+    const result = await addToCartByVariant("v1", NaN);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
     });
   });
 
@@ -318,6 +354,42 @@ describe("updateCartItemByVariant", () => {
     const result = await updateCartItemByVariant("v1", 10);
 
     expect(result).toEqual({ success: false, error: "在庫が不足しています" });
+  });
+
+  // 小数値でエラーを返す
+  it("小数値でエラーを返す", async () => {
+    setupAuth();
+
+    const result = await updateCartItemByVariant("v1", 2.5);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
+
+  // quantity=0でエラーを返す
+  it("quantity=0でエラーを返す", async () => {
+    setupAuth();
+
+    const result = await updateCartItemByVariant("v1", 0);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
+  });
+
+  // 負の整数でエラーを返す
+  it("負の整数でエラーを返す", async () => {
+    setupAuth();
+
+    const result = await updateCartItemByVariant("v1", -1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "数量は1以上の整数で指定してください",
+    });
   });
 });
 
