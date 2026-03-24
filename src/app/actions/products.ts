@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import {
   createProduct,
@@ -14,16 +15,24 @@ import {
 } from "@/db/queries/variants";
 import { verifyAdmin } from "@/lib/admin-auth";
 import {
-  productActionSchema,
-  variantActionSchema,
+  uuidSchema,
+  newProductSchema,
+  updateProductSchema,
+  variantSchema,
+  updateVariantSchema,
 } from "@/lib/validations";
 
-export async function deleteProductAction(id: string) {
+export async function deleteProductAction(id: unknown) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const parsed = uuidSchema.safeParse(id);
+  if (!parsed.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
+  }
+
   try {
-    await deleteProduct(id);
+    await deleteProduct(parsed.data);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
@@ -34,20 +43,26 @@ export async function deleteProductAction(id: string) {
 }
 
 export async function toggleProductAvailabilityAction(
-  id: string,
-  isAvailable: boolean
+  id: unknown,
+  isAvailable: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const parsedId = uuidSchema.safeParse(id);
+  const parsedAvailable = z.boolean().safeParse(isAvailable);
+  if (!parsedId.success || !parsedAvailable.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
+  }
+
   try {
-    if (isAvailable) {
-      const count = await countVariantsByProductId(id);
+    if (parsedAvailable.data) {
+      const count = await countVariantsByProductId(parsedId.data);
       if (count === 0) {
         return { success: false, error: "バリエーションがない商品は公開できません" };
       }
     }
-    await updateProduct(id, { isAvailable });
+    await updateProduct(parsedId.data, { isAvailable: parsedAvailable.data });
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
@@ -58,50 +73,32 @@ export async function toggleProductAvailabilityAction(
 }
 
 export async function createProductWithVariantsAction(
-  productData: {
-    name: string;
-    stockKg?: number;
-    description?: string | null;
-    isAvailable?: boolean;
-  },
-  variants: {
-    label: string;
-    weightKg: string;
-    priceJpy: number;
-    isGiftOnly?: boolean;
-    displayOrder?: number;
-    isAvailable?: boolean;
-  }[]
+  productData: unknown,
+  variants: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
-  const productParsed = productActionSchema.safeParse(productData);
-  if (!productParsed.success) {
-    return { success: false, error: productParsed.error.issues[0].message };
-  }
-
-  for (const v of variants) {
-    const variantParsed = variantActionSchema.safeParse(v);
-    if (!variantParsed.success) {
-      return { success: false, error: variantParsed.error.issues[0].message };
-    }
+  const parsedProduct = newProductSchema.safeParse(productData);
+  const parsedVariants = z.array(variantSchema).safeParse(variants);
+  if (!parsedProduct.success || !parsedVariants.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
   }
 
   try {
     const product = await createProduct({
-      name: productData.name,
-      variety: productData.name,
+      name: parsedProduct.data.name,
+      variety: parsedProduct.data.name,
       weightGrams: 0,
       priceJpy: 0,
-      description: productData.description,
+      description: parsedProduct.data.description,
       stock: 0,
       stockUnit: "kg",
-      isAvailable: variants.length === 0 ? false : productData.isAvailable,
+      isAvailable: parsedVariants.data.length === 0 ? false : parsedProduct.data.isAvailable,
     });
 
     const createdVariants = await Promise.all(
-      variants.map((v) =>
+      parsedVariants.data.map((v) =>
         createVariant({
           productId: product.id,
           ...v,
@@ -119,32 +116,26 @@ export async function createProductWithVariantsAction(
 }
 
 export async function updateProductV2Action(
-  id: string,
-  data: Partial<{
-    name: string;
-    stockKg: number;
-    description: string | null;
-    isAvailable: boolean;
-  }>
+  id: unknown,
+  data: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
-  const parsed = productActionSchema.partial().safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+  const parsedId = uuidSchema.safeParse(id);
+  const parsedData = updateProductSchema.safeParse(data);
+  if (!parsedId.success || !parsedData.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
   }
 
-  const validData = parsed.data;
-
   try {
-    if (validData.isAvailable === true) {
-      const count = await countVariantsByProductId(id);
+    if (parsedData.data.isAvailable === true) {
+      const count = await countVariantsByProductId(parsedId.data);
       if (count === 0) {
         return { success: false, error: "バリエーションがない商品は公開できません" };
       }
     }
-    await updateProduct(id, validData);
+    await updateProduct(parsedId.data, parsedData.data);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
@@ -155,26 +146,20 @@ export async function updateProductV2Action(
 }
 
 export async function createVariantAction(
-  productId: string,
-  data: {
-    label: string;
-    weightKg: string;
-    priceJpy: number;
-    isGiftOnly?: boolean;
-    displayOrder?: number;
-    isAvailable?: boolean;
-  }
+  productId: unknown,
+  data: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
-  const parsed = variantActionSchema.safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+  const parsedId = uuidSchema.safeParse(productId);
+  const parsedData = variantSchema.safeParse(data);
+  if (!parsedId.success || !parsedData.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
   }
 
   try {
-    const variant = await createVariant({ productId, ...data });
+    const variant = await createVariant({ productId: parsedId.data, ...parsedData.data });
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true, variant };
@@ -185,26 +170,20 @@ export async function createVariantAction(
 }
 
 export async function updateVariantAction(
-  variantId: string,
-  data: Partial<{
-    label: string;
-    weightKg: string;
-    priceJpy: number;
-    isGiftOnly: boolean;
-    displayOrder: number;
-    isAvailable: boolean;
-  }>
+  variantId: unknown,
+  data: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
-  const parsed = variantActionSchema.partial().safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+  const parsedId = uuidSchema.safeParse(variantId);
+  const parsedData = updateVariantSchema.safeParse(data);
+  if (!parsedId.success || !parsedData.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
   }
 
   try {
-    await updateVariant(variantId, data);
+    await updateVariant(parsedId.data, parsedData.data);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
@@ -215,14 +194,20 @@ export async function updateVariantAction(
 }
 
 export async function deleteVariantAction(
-  variantId: string,
-  productId: string
+  variantId: unknown,
+  productId: unknown
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const parsedVariantId = uuidSchema.safeParse(variantId);
+  const parsedProductId = uuidSchema.safeParse(productId);
+  if (!parsedVariantId.success || !parsedProductId.success) {
+    return { success: false, error: "入力内容に誤りがあります" };
+  }
+
   try {
-    const count = await countVariantsByProductId(productId);
+    const count = await countVariantsByProductId(parsedProductId.data);
     if (count <= 1) {
       return {
         success: false,
@@ -230,7 +215,7 @@ export async function deleteVariantAction(
       };
     }
 
-    await deleteVariant(variantId);
+    await deleteVariant(parsedVariantId.data);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };

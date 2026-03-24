@@ -33,6 +33,7 @@ import {
   countVariantsByProductId,
 } from "@/db/queries/variants";
 import {
+  deleteProductAction,
   createProductWithVariantsAction,
   updateProductV2Action,
   toggleProductAvailabilityAction,
@@ -49,6 +50,10 @@ const mockUpdateVariant = vi.mocked(updateVariant);
 const mockDeleteVariant = vi.mocked(deleteVariant);
 const mockCountVariants = vi.mocked(countVariantsByProductId);
 
+// テスト用UUID定数
+const PRODUCT_ID = "550e8400-e29b-41d4-a716-446655440000";
+const VARIANT_ID = "660e8400-e29b-41d4-a716-446655440001";
+
 function setupAdmin() {
   mockAuth.mockResolvedValue({
     user: { role: "admin", email: "admin@example.com" },
@@ -59,6 +64,40 @@ function setupAdmin() {
 function setupNoAdmin() {
   mockAuth.mockResolvedValue(null);
 }
+
+describe("deleteProductAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("非管理者でエラーを返す", async () => {
+    setupNoAdmin();
+
+    const result = await deleteProductAction(PRODUCT_ID);
+
+    expect(result).toEqual({ success: false, error: "管理者認証が必要です" });
+    expect(mockDeleteProduct).not.toHaveBeenCalled();
+  });
+
+  it("正常なUUIDで商品を削除できる", async () => {
+    setupAdmin();
+    mockDeleteProduct.mockResolvedValue(undefined);
+
+    const result = await deleteProductAction(PRODUCT_ID);
+
+    expect(result).toEqual({ success: true });
+    expect(mockDeleteProduct).toHaveBeenCalledWith(PRODUCT_ID);
+  });
+
+  it("不正なUUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await deleteProductAction("not-a-uuid");
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockDeleteProduct).not.toHaveBeenCalled();
+  });
+});
 
 describe("createProductWithVariantsAction", () => {
   beforeEach(() => {
@@ -81,10 +120,10 @@ describe("createProductWithVariantsAction", () => {
   it("商品とバリエーションを正常に作成し、variantsを返す", async () => {
     setupAdmin();
     mockCreateProduct.mockResolvedValue({
-      id: "p1",
+      id: PRODUCT_ID,
       name: "早生みかん",
     } as never);
-    mockCreateVariant.mockResolvedValue({ id: "v1", label: "3kg" } as never);
+    mockCreateVariant.mockResolvedValue({ id: VARIANT_ID, label: "3kg" } as never);
 
     const result = await createProductWithVariantsAction(
       { name: "早生みかん", stockKg: 100 },
@@ -97,53 +136,14 @@ describe("createProductWithVariantsAction", () => {
     expect(result).toHaveProperty("variants");
     if (result.success) {
       expect(result.variants).toHaveLength(1);
-      expect(result.variants![0]).toMatchObject({ id: "v1", label: "3kg" });
+      expect(result.variants![0]).toMatchObject({ id: VARIANT_ID, label: "3kg" });
     }
-  });
-
-  it("商品名が空文字の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await createProductWithVariantsAction(
-      { name: "", stockKg: 10 },
-      [{ label: "3kg", weightKg: "3", priceJpy: 1800 }]
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockCreateProduct).not.toHaveBeenCalled();
-  });
-
-  it("バリエーションのpriceJpyが負の値の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await createProductWithVariantsAction(
-      { name: "みかん", stockKg: 10 },
-      [{ label: "3kg", weightKg: "3", priceJpy: -100 }]
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockCreateProduct).not.toHaveBeenCalled();
-  });
-
-  it("バリエーションのweightKgが不正な文字列の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await createProductWithVariantsAction(
-      { name: "みかん", stockKg: 10 },
-      [{ label: "3kg", weightKg: "abc", priceJpy: 1800 }]
-    );
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockCreateProduct).not.toHaveBeenCalled();
   });
 
   it("variants空配列でisAvailable=trueを指定しても強制的にfalseで作成される", async () => {
     setupAdmin();
     mockCreateProduct.mockResolvedValue({
-      id: "p1",
+      id: PRODUCT_ID,
       name: "test",
     } as never);
 
@@ -157,6 +157,54 @@ describe("createProductWithVariantsAction", () => {
       expect.objectContaining({ isAvailable: false })
     );
   });
+
+  it("productDataのnameが空文字でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "", stockKg: 10 },
+      [{ label: "3kg", weightKg: "3", priceJpy: 1800 }]
+    );
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
+  it("variantsが配列でない場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "test", stockKg: 10 },
+      "not-array" as unknown as never[]
+    );
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
+  it("variants内のweightKgが不正値でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "test", stockKg: 10 },
+      [{ label: "3kg", weightKg: "-1", priceJpy: 1800 }]
+    );
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
+  it("productDataがnullでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      null as never,
+      [{ label: "3kg", weightKg: "3", priceJpy: 1800 }]
+    );
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateProductV2Action", () => {
@@ -164,39 +212,19 @@ describe("updateProductV2Action", () => {
     vi.clearAllMocks();
   });
 
-  it("stockKgが負の値の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await updateProductV2Action("p1", { stockKg: -10 });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockUpdateProduct).not.toHaveBeenCalled();
-  });
-
-  it("nameが空文字の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await updateProductV2Action("p1", { name: "" });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockUpdateProduct).not.toHaveBeenCalled();
-  });
-
   // G3: 部分更新
   it("name, stockKg, isAvailable の部分更新ができる", async () => {
     setupAdmin();
     mockUpdateProduct.mockResolvedValue(undefined);
 
-    const result = await updateProductV2Action("p1", {
+    const result = await updateProductV2Action(PRODUCT_ID, {
       name: "新名前",
       stockKg: 50,
       isAvailable: false,
     });
 
     expect(result).toEqual({ success: true });
-    expect(mockUpdateProduct).toHaveBeenCalledWith("p1", {
+    expect(mockUpdateProduct).toHaveBeenCalledWith(PRODUCT_ID, {
       name: "新名前",
       stockKg: 50,
       isAvailable: false,
@@ -207,7 +235,7 @@ describe("updateProductV2Action", () => {
     setupAdmin();
     mockCountVariants.mockResolvedValue(0);
 
-    const result = await updateProductV2Action("p1", { isAvailable: true });
+    const result = await updateProductV2Action(PRODUCT_ID, { isAvailable: true });
 
     expect(result).toEqual({
       success: false,
@@ -220,7 +248,7 @@ describe("updateProductV2Action", () => {
     setupAdmin();
     mockUpdateProduct.mockResolvedValue(undefined);
 
-    const result = await updateProductV2Action("p1", { name: "新名前" });
+    const result = await updateProductV2Action(PRODUCT_ID, { name: "新名前" });
 
     expect(result).toEqual({ success: true });
     expect(mockCountVariants).not.toHaveBeenCalled();
@@ -231,10 +259,54 @@ describe("updateProductV2Action", () => {
     mockCountVariants.mockResolvedValue(3);
     mockUpdateProduct.mockResolvedValue(undefined);
 
-    const result = await updateProductV2Action("p1", { isAvailable: true });
+    const result = await updateProductV2Action(PRODUCT_ID, { isAvailable: true });
 
     expect(result).toEqual({ success: true });
     expect(mockUpdateProduct).toHaveBeenCalled();
+  });
+
+  it("不正なUUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateProductV2Action("invalid", { name: "新名前" });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("stockKgが負数でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateProductV2Action(PRODUCT_ID, { stockKg: -1 });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("空オブジェクトでの更新は成功する（partial許容）", async () => {
+    setupAdmin();
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await updateProductV2Action(PRODUCT_ID, {});
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateProduct).toHaveBeenCalledWith(PRODUCT_ID, {});
+  });
+
+  it("想定外フィールドがstripされDB層に渡らない", async () => {
+    setupAdmin();
+    mockUpdateProduct.mockResolvedValue(undefined);
+
+    const result = await updateProductV2Action(PRODUCT_ID, {
+      name: "新名前",
+      id: "hacked",
+      createdAt: "2024-01-01",
+    } as never);
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateProduct).toHaveBeenCalledWith(PRODUCT_ID, {
+      name: "新名前",
+    });
   });
 });
 
@@ -243,40 +315,12 @@ describe("createVariantAction", () => {
     vi.clearAllMocks();
   });
 
-  it("ラベルが空文字の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await createVariantAction("p1", {
-      label: "",
-      weightKg: "5",
-      priceJpy: 2800,
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockCreateVariant).not.toHaveBeenCalled();
-  });
-
-  it("priceJpyが0の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await createVariantAction("p1", {
-      label: "5kg",
-      weightKg: "5",
-      priceJpy: 0,
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockCreateVariant).not.toHaveBeenCalled();
-  });
-
   // G5: 正常作成
   it("バリエーションを正常に作成する", async () => {
     setupAdmin();
-    mockCreateVariant.mockResolvedValue({ id: "v1" } as never);
+    mockCreateVariant.mockResolvedValue({ id: VARIANT_ID } as never);
 
-    const result = await createVariantAction("p1", {
+    const result = await createVariantAction(PRODUCT_ID, {
       label: "5kg",
       weightKg: "5",
       priceJpy: 2800,
@@ -284,8 +328,60 @@ describe("createVariantAction", () => {
 
     expect(result.success).toBe(true);
     expect(mockCreateVariant).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: "p1", label: "5kg" })
+      expect.objectContaining({ productId: PRODUCT_ID, label: "5kg" })
     );
+  });
+
+  it("不正なUUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction("invalid", {
+      label: "5kg",
+      weightKg: "5",
+      priceJpy: 2800,
+    });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateVariant).not.toHaveBeenCalled();
+  });
+
+  it("labelが空文字でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction(PRODUCT_ID, {
+      label: "",
+      weightKg: "5",
+      priceJpy: 2800,
+    });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateVariant).not.toHaveBeenCalled();
+  });
+
+  it("weightKgが数値でない文字列でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction(PRODUCT_ID, {
+      label: "5kg",
+      weightKg: "abc",
+      priceJpy: 2800,
+    });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateVariant).not.toHaveBeenCalled();
+  });
+
+  it("weightKgが'0'でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction(PRODUCT_ID, {
+      label: "5kg",
+      weightKg: "0",
+      priceJpy: 2800,
+    });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockCreateVariant).not.toHaveBeenCalled();
   });
 });
 
@@ -294,41 +390,43 @@ describe("updateVariantAction", () => {
     vi.clearAllMocks();
   });
 
-  it("priceJpyが負の値の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await updateVariantAction("v1", { priceJpy: -500 });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockUpdateVariant).not.toHaveBeenCalled();
-  });
-
-  it("labelが空文字の場合バリデーションエラーを返す", async () => {
-    setupAdmin();
-
-    const result = await updateVariantAction("v1", { label: "" });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(mockUpdateVariant).not.toHaveBeenCalled();
-  });
-
   // G6: 部分更新
   it("バリエーションの部分更新ができる", async () => {
     setupAdmin();
     mockUpdateVariant.mockResolvedValue(undefined);
 
-    const result = await updateVariantAction("v1", {
+    const result = await updateVariantAction(VARIANT_ID, {
       label: "10kg",
       priceJpy: 5000,
     });
 
     expect(result).toEqual({ success: true });
-    expect(mockUpdateVariant).toHaveBeenCalledWith("v1", {
+    expect(mockUpdateVariant).toHaveBeenCalledWith(VARIANT_ID, {
       label: "10kg",
       priceJpy: 5000,
     });
+  });
+
+  it("不正なUUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateVariantAction("invalid", {
+      label: "10kg",
+      priceJpy: 5000,
+    });
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockUpdateVariant).not.toHaveBeenCalled();
+  });
+
+  it("空オブジェクトでの更新は成功する（partial許容）", async () => {
+    setupAdmin();
+    mockUpdateVariant.mockResolvedValue(undefined);
+
+    const result = await updateVariantAction(VARIANT_ID, {});
+
+    expect(result).toEqual({ success: true });
+    expect(mockUpdateVariant).toHaveBeenCalledWith(VARIANT_ID, {});
   });
 });
 
@@ -342,7 +440,7 @@ describe("deleteVariantAction", () => {
     setupAdmin();
     mockCountVariants.mockResolvedValue(1);
 
-    const result = await deleteVariantAction("v1", "p1");
+    const result = await deleteVariantAction(VARIANT_ID, PRODUCT_ID);
 
     expect(result).toEqual({
       success: false,
@@ -357,14 +455,34 @@ describe("deleteVariantAction", () => {
     mockCountVariants.mockResolvedValue(2);
     mockDeleteVariant.mockResolvedValue(undefined);
 
-    const result = await deleteVariantAction("v1", "p1");
+    const result = await deleteVariantAction(VARIANT_ID, PRODUCT_ID);
 
     expect(result).toEqual({ success: true });
-    expect(mockDeleteVariant).toHaveBeenCalledWith("v1");
+    expect(mockDeleteVariant).toHaveBeenCalledWith(VARIANT_ID);
+  });
+
+  it("variantIdが不正UUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await deleteVariantAction("not-uuid", PRODUCT_ID);
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockDeleteVariant).not.toHaveBeenCalled();
+    expect(mockCountVariants).not.toHaveBeenCalled();
+  });
+
+  it("productIdが不正UUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await deleteVariantAction(VARIANT_ID, "not-uuid");
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockDeleteVariant).not.toHaveBeenCalled();
+    expect(mockCountVariants).not.toHaveBeenCalled();
   });
 });
 
-describe("toggleProductAvailabilityAction — バリエーションチェック", () => {
+describe("toggleProductAvailabilityAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -373,7 +491,7 @@ describe("toggleProductAvailabilityAction — バリエーションチェック"
     setupAdmin();
     mockCountVariants.mockResolvedValue(0);
 
-    const result = await toggleProductAvailabilityAction("p1", true);
+    const result = await toggleProductAvailabilityAction(PRODUCT_ID, true);
 
     expect(result).toEqual({
       success: false,
@@ -387,19 +505,40 @@ describe("toggleProductAvailabilityAction — バリエーションチェック"
     mockCountVariants.mockResolvedValue(2);
     mockUpdateProduct.mockResolvedValue(undefined);
 
-    const result = await toggleProductAvailabilityAction("p1", true);
+    const result = await toggleProductAvailabilityAction(PRODUCT_ID, true);
 
     expect(result).toEqual({ success: true });
-    expect(mockUpdateProduct).toHaveBeenCalledWith("p1", { isAvailable: true });
+    expect(mockUpdateProduct).toHaveBeenCalledWith(PRODUCT_ID, { isAvailable: true });
   });
 
   it("非公開にする場合はバリエーション数を問わず成功する", async () => {
     setupAdmin();
     mockUpdateProduct.mockResolvedValue(undefined);
 
-    const result = await toggleProductAvailabilityAction("p1", false);
+    const result = await toggleProductAvailabilityAction(PRODUCT_ID, false);
 
     expect(result).toEqual({ success: true });
     expect(mockCountVariants).not.toHaveBeenCalled();
+  });
+
+  it("不正なUUIDでバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await toggleProductAvailabilityAction("invalid", true);
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("isAvailableが文字列でバリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await toggleProductAvailabilityAction(
+      PRODUCT_ID,
+      "true" as unknown as boolean
+    );
+
+    expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
   });
 });

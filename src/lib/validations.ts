@@ -84,7 +84,11 @@ export const productSchema = z.object({
 
 export const variantSchema = z.object({
   label: z.string().min(1, "ラベルを入力してください"),
-  weightKg: z.number().positive("重量は0より大きい値を入力してください"),
+  weightKg: z
+    .string()
+    .refine((v) => { const n = Number(v); return !isNaN(n) && n > 0; }, {
+      message: "重量は0より大きい値を入力してください",
+    }),
   priceJpy: z.number().int("価格は整数を入力してください").positive("価格は1以上の整数を入力してください"),
   isGiftOnly: z.boolean().default(false),
   displayOrder: z.number().int().min(0).default(0),
@@ -93,16 +97,32 @@ export const variantSchema = z.object({
 
 export const newProductSchema = z.object({
   name: z.string().min(1, "商品名を入力してください"),
-  stockKg: z.number().min(0, "在庫は0以上で入力してください"),
+  stockKg: z.number().min(0, "在庫は0以上で入力してください").default(0),
   description: z.string().optional().default(""),
   isAvailable: z.boolean().default(true),
 });
 
+// update用スキーマはデフォルト値なし（明示的に渡されたフィールドのみ更新するため）
+export const updateProductSchema = z.object({
+  name: z.string().min(1, "商品名を入力してください"),
+  stockKg: z.number().min(0, "在庫は0以上で入力してください"),
+  description: z.string().nullable(),
+  isAvailable: z.boolean(),
+}).partial();
+
+// variantSchemaのshapeからデフォルト値を除いてpartial化
+export const updateVariantSchema = z.object({
+  label: variantSchema.shape.label,
+  weightKg: variantSchema.shape.weightKg,
+  priceJpy: variantSchema.shape.priceJpy,
+  isGiftOnly: z.boolean(),
+  displayOrder: z.number().int().min(0),
+  isAvailable: z.boolean(),
+}).partial();
+
 export const productWithVariantsSchema = z.object({
   product: newProductSchema,
-  variants: z
-    .array(variantSchema)
-    .min(1, "最低1つのバリエーションが必要です"),
+  variants: z.array(variantSchema),
 });
 
 export type VariantFormData = z.infer<typeof variantSchema>;
@@ -110,32 +130,6 @@ export type NewProductFormData = z.infer<typeof newProductSchema>;
 export type ProductWithVariantsFormData = z.infer<
   typeof productWithVariantsSchema
 >;
-
-// --- Server Action用スキーマ（DB型に合わせてweightKgはstring） ---
-
-export const productActionSchema = z.object({
-  name: z.string().min(1, "商品名を入力してください"),
-  stockKg: z.number().min(0, "在庫は0以上で入力してください").optional(),
-  description: z.string().nullable().optional(),
-  isAvailable: z.boolean().optional(),
-});
-
-export const variantActionSchema = z.object({
-  label: z.string().min(1, "ラベルを入力してください"),
-  weightKg: z
-    .string()
-    .refine(
-      (val) => !isNaN(Number(val)) && Number(val) > 0,
-      "重量は0より大きい値を入力してください"
-    ),
-  priceJpy: z
-    .number()
-    .int("価格は整数を入力してください")
-    .positive("価格は1以上の整数を入力してください"),
-  isGiftOnly: z.boolean().optional(),
-  displayOrder: z.number().int().min(0).optional(),
-  isAvailable: z.boolean().optional(),
-});
 
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type AddressDraft = Omit<AddressFormData, "prefecture"> & {
@@ -146,5 +140,6 @@ export type ProductFormData = z.infer<typeof productSchema>;
 export type PickupTimeSlot = z.infer<typeof pickupTimeSlotSchema>;
 export type FulfillmentData = z.infer<typeof fulfillmentSchema>;
 
-// --- Idempotency Key ---
-export const idempotencyKeySchema = z.string().uuid();
+// --- UUID ---
+export const uuidSchema = z.string().uuid();
+export const idempotencyKeySchema = uuidSchema;

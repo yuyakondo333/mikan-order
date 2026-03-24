@@ -72,7 +72,7 @@ describe("variantSchema", () => {
   it("label が空文字の場合エラーになる", () => {
     const result = variantSchema.safeParse({
       label: "",
-      weightKg: 3,
+      weightKg: "3",
       priceJpy: 1800,
     });
     expect(result.success).toBe(false);
@@ -83,11 +83,11 @@ describe("variantSchema", () => {
     }
   });
 
-  // A5: weightKg が 0 → エラー（positive）
-  it("weightKg が 0 の場合エラーになる", () => {
+  // A5: weightKg が "0" → エラー（refine: > 0）
+  it("weightKg が '0' の場合エラーになる", () => {
     const result = variantSchema.safeParse({
       label: "3kg",
-      weightKg: 0,
+      weightKg: "0",
       priceJpy: 1800,
     });
     expect(result.success).toBe(false);
@@ -98,11 +98,11 @@ describe("variantSchema", () => {
     }
   });
 
-  // A6: weightKg が 0.5（小数）→ 成功
-  it("weightKg が 0.5（小数）の場合成功する", () => {
+  // A6: weightKg が "0.5"（小数）→ 成功
+  it("weightKg が '0.5'（小数文字列）の場合成功する", () => {
     const result = variantSchema.safeParse({
       label: "0.5kg",
-      weightKg: 0.5,
+      weightKg: "0.5",
       priceJpy: 800,
     });
     expect(result.success).toBe(true);
@@ -112,7 +112,7 @@ describe("variantSchema", () => {
   it("priceJpy が 0 の場合エラーになる", () => {
     const result = variantSchema.safeParse({
       label: "3kg",
-      weightKg: 3,
+      weightKg: "3",
       priceJpy: 0,
     });
     expect(result.success).toBe(false);
@@ -127,7 +127,7 @@ describe("variantSchema", () => {
   it("priceJpy が小数の場合エラーになる", () => {
     const result = variantSchema.safeParse({
       label: "3kg",
-      weightKg: 3,
+      weightKg: "3",
       priceJpy: 1800.5,
     });
     expect(result.success).toBe(false);
@@ -142,14 +142,14 @@ describe("variantSchema", () => {
   it("正常値で成功する", () => {
     const result = variantSchema.safeParse({
       label: "3kg",
-      weightKg: 3,
+      weightKg: "3",
       priceJpy: 1800,
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual({
         label: "3kg",
-        weightKg: 3,
+        weightKg: "3",
         priceJpy: 1800,
         isGiftOnly: false,
         displayOrder: 0,
@@ -162,7 +162,7 @@ describe("variantSchema", () => {
   it("デフォルト値（isGiftOnly=false, displayOrder=0, isAvailable=true）が適用される", () => {
     const result = variantSchema.safeParse({
       label: "5kg 贈答用",
-      weightKg: 5,
+      weightKg: "5",
       priceJpy: 3500,
     });
     expect(result.success).toBe(true);
@@ -253,21 +253,13 @@ describe("idempotencyKeySchema", () => {
 });
 
 describe("productWithVariantsSchema", () => {
-  // A10: variants が空配列 → エラー
-  it("variants が空配列の場合エラーになる", () => {
+  // A10: variants が空配列 → 成功（Server Action側でisAvailable=falseに強制する仕様）
+  it("variants が空配列の場合も成功する", () => {
     const result = productWithVariantsSchema.safeParse({
       product: { name: "早生みかん", stockKg: 100 },
       variants: [],
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const variantsError = result.error.issues.find(
-        (i) => i.path[0] === "variants"
-      );
-      expect(variantsError?.message).toBe(
-        "最低1つのバリエーションが必要です"
-      );
-    }
+    expect(result.success).toBe(true);
   });
 
   // A11: variants が1つ以上で成功
@@ -275,7 +267,7 @@ describe("productWithVariantsSchema", () => {
     const result = productWithVariantsSchema.safeParse({
       product: { name: "早生みかん", stockKg: 100 },
       variants: [
-        { label: "3kg", weightKg: 3, priceJpy: 1800 },
+        { label: "3kg", weightKg: "3", priceJpy: 1800 },
       ],
     });
     expect(result.success).toBe(true);
