@@ -6,6 +6,7 @@ import type { ProductWithVariants, ProductVariant } from "@/types";
 type ProductCardProps = {
   product: ProductWithVariants;
   onAddToCart: (variantId: string, quantity: number, productName: string) => void;
+  isPending?: boolean;
 };
 
 function calcMaxQuantity(stockKg: number, weightKg: string): number {
@@ -18,7 +19,7 @@ function isVariantAvailable(stockKg: number, weightKg: string): boolean {
   return Number(weightKg) <= stockKg;
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart, isPending }: ProductCardProps) {
   const { variants } = product;
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     variants[0]?.id ?? ""
@@ -128,9 +129,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                   setQuantity(1);
                 }
               }}
-              className="cursor-pointer rounded-full bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+              disabled={isPending}
+              className="cursor-pointer rounded-full bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              カートに追加
+              {isPending ? "追加中..." : "カートに追加"}
             </button>
           </div>
         )}
