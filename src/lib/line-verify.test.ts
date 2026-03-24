@@ -3,8 +3,9 @@ import { verifyLineIdToken } from "./line-verify";
 
 describe("verifyLineIdToken", () => {
   beforeEach(() => {
-    vi.stubEnv("LIFF_CHANNEL_ID", "1234567890");
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    vi.stubEnv("LIFF_CHANNEL_ID", "1234567890");
   });
 
   it("正しいIDトークンでユーザー情報を返し、LIFF_CHANNEL_IDがclient_idとして送信される", async () => {
@@ -65,8 +66,7 @@ describe("verifyLineIdToken", () => {
   });
 
   it("LIFF_CHANNEL_IDが未設定の場合エラーをthrowする", async () => {
-    vi.stubEnv("LIFF_CHANNEL_ID", "");
-    delete process.env.LIFF_CHANNEL_ID;
+    vi.unstubAllEnvs();
 
     await expect(verifyLineIdToken("some-token")).rejects.toThrow(
       "LIFF_CHANNEL_ID"
