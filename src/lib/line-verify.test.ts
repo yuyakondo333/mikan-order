@@ -3,11 +3,12 @@ import { verifyLineIdToken } from "./line-verify";
 
 describe("verifyLineIdToken", () => {
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_LIFF_ID", "1234567890-abcdef");
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    vi.stubEnv("LIFF_CHANNEL_ID", "1234567890");
   });
 
-  it("正しいIDトークンでユーザー情報を返す", async () => {
+  it("正しいIDトークンでユーザー情報を返し、LIFF_CHANNEL_IDがclient_idとして送信される", async () => {
     const mockResponse = {
       sub: "U1234567890",
       name: "テストユーザー",
@@ -37,7 +38,7 @@ describe("verifyLineIdToken", () => {
       })
     );
 
-    // client_id が LIFF ID のハイフン前（チャネルID）であること
+    // client_id が LIFF_CHANNEL_ID の値そのままであること
     const callBody = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body;
     expect(callBody).toContain("client_id=1234567890");
     expect(callBody).toContain("id_token=valid-id-token");
@@ -64,11 +65,20 @@ describe("verifyLineIdToken", () => {
     expect(fetch).toHaveBeenCalled();
   });
 
-  it("LIFF_IDが未設定の場合nullを返す", async () => {
-    vi.stubEnv("NEXT_PUBLIC_LIFF_ID", "");
+  it("LIFF_CHANNEL_IDが未設定の場合エラーをthrowする", async () => {
+    vi.unstubAllEnvs();
 
-    const result = await verifyLineIdToken("some-token");
-    expect(result).toBeNull();
+    await expect(verifyLineIdToken("some-token")).rejects.toThrow(
+      "LIFF_CHANNEL_ID"
+    );
+  });
+
+  it("LIFF_CHANNEL_IDが空文字の場合エラーをthrowする", async () => {
+    vi.stubEnv("LIFF_CHANNEL_ID", "");
+
+    await expect(verifyLineIdToken("some-token")).rejects.toThrow(
+      "LIFF_CHANNEL_ID"
+    );
   });
 
   it("pictureが未設定のユーザーでもundefinedとして返す", async () => {
