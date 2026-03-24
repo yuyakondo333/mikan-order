@@ -13,6 +13,10 @@ import {
   countVariantsByProductId,
 } from "@/db/queries/variants";
 import { verifyAdmin } from "@/lib/admin-auth";
+import {
+  productActionSchema,
+  variantActionSchema,
+} from "@/lib/validations";
 
 export async function deleteProductAction(id: string) {
   const isAdmin = await verifyAdmin();
@@ -72,6 +76,18 @@ export async function createProductWithVariantsAction(
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const productParsed = productActionSchema.safeParse(productData);
+  if (!productParsed.success) {
+    return { success: false, error: productParsed.error.issues[0].message };
+  }
+
+  for (const v of variants) {
+    const variantParsed = variantActionSchema.safeParse(v);
+    if (!variantParsed.success) {
+      return { success: false, error: variantParsed.error.issues[0].message };
+    }
+  }
+
   try {
     const product = await createProduct({
       name: productData.name,
@@ -114,14 +130,21 @@ export async function updateProductV2Action(
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const parsed = productActionSchema.partial().safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const validData = parsed.data;
+
   try {
-    if (data.isAvailable === true) {
+    if (validData.isAvailable === true) {
       const count = await countVariantsByProductId(id);
       if (count === 0) {
         return { success: false, error: "バリエーションがない商品は公開できません" };
       }
     }
-    await updateProduct(id, data);
+    await updateProduct(id, validData);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
@@ -144,6 +167,11 @@ export async function createVariantAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const parsed = variantActionSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
 
   try {
     const variant = await createVariant({ productId, ...data });
@@ -169,6 +197,11 @@ export async function updateVariantAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const parsed = variantActionSchema.partial().safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
 
   try {
     await updateVariant(variantId, data);
