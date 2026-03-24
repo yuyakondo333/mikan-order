@@ -7,10 +7,13 @@ type LineVerifyResult = {
 export async function verifyLineIdToken(
   idToken: string
 ): Promise<LineVerifyResult | null> {
-  const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-  if (!liffId) return null;
+  const channelId = process.env.LIFF_CHANNEL_ID;
+  if (!channelId) {
+    throw new Error(
+      "LIFF_CHANNEL_ID environment variable is required"
+    );
+  }
 
-  const channelId = liffId.split("-")[0];
   const params = new URLSearchParams();
   params.append("id_token", idToken);
   params.append("client_id", channelId);

@@ -8,17 +8,18 @@ import { useCartCount } from "@/components/cart-count-provider";
 import type { ProductWithVariants } from "@/types";
 
 export function ProductList({ products }: { products: ProductWithVariants[] }) {
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const { incrementCount } = useCartCount();
 
   function handleAddToCart(variantId: string, quantity: number, productName: string) {
+    const toastId = toast.success(`${productName} を ${quantity}個 カートに追加しました`);
     startTransition(async () => {
       const result = await addToCartByVariant(variantId, quantity);
 
       if (result.success) {
         incrementCount(quantity);
-        toast.success(`${productName} を ${quantity}個 カートに追加しました`);
       } else {
+        toast.dismiss(toastId);
         toast.error(result.error || "カートへの追加に失敗しました");
       }
     });
@@ -35,6 +36,7 @@ export function ProductList({ products }: { products: ProductWithVariants[] }) {
           key={product.id}
           product={product}
           onAddToCart={handleAddToCart}
+          isPending={isPending}
         />
       ))}
     </div>

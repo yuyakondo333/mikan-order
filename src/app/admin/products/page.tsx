@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getAllProductsWithVariants } from "@/db/queries/products";
 import { AdminProductsManager } from "@/components/admin/products-manager";
 import { ProductsListSkeleton } from "@/components/admin/skeletons";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,9 @@ async function ProductsData() {
   return <AdminProductsManager initialProducts={products} />;
 }
 
-export default function AdminProductsPage() {
+export default async function AdminProductsPage() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) redirect("/admin/login");
   return (
     <Suspense fallback={<ProductsManagerSkeleton />}>
       <ProductsData />
