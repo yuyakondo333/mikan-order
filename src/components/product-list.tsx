@@ -10,11 +10,12 @@ export function ProductList({ products }: { products: ProductWithVariants[] }) {
   const [isPending, startTransition] = useTransition();
 
   function handleAddToCart(variantId: string, quantity: number, productName: string) {
-    toast.success(`${productName} を ${quantity}個 カートに追加しました`);
+    const toastId = toast.success(`${productName} を ${quantity}個 カートに追加しました`);
     startTransition(async () => {
       const result = await addToCartByVariant(variantId, quantity);
 
       if (!result.success) {
+        toast.dismiss(toastId);
         toast.error(result.error || "カートへの追加に失敗しました");
       }
     });
