@@ -111,6 +111,32 @@ export type ProductWithVariantsFormData = z.infer<
   typeof productWithVariantsSchema
 >;
 
+// --- Server Action用スキーマ（DB型に合わせてweightKgはstring） ---
+
+export const productActionSchema = z.object({
+  name: z.string().min(1, "商品名を入力してください"),
+  stockKg: z.number().min(0, "在庫は0以上で入力してください").optional(),
+  description: z.string().nullable().optional(),
+  isAvailable: z.boolean().optional(),
+});
+
+export const variantActionSchema = z.object({
+  label: z.string().min(1, "ラベルを入力してください"),
+  weightKg: z
+    .string()
+    .refine(
+      (val) => !isNaN(Number(val)) && Number(val) > 0,
+      "重量は0より大きい値を入力してください"
+    ),
+  priceJpy: z
+    .number()
+    .int("価格は整数を入力してください")
+    .positive("価格は1以上の整数を入力してください"),
+  isGiftOnly: z.boolean().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+  isAvailable: z.boolean().optional(),
+});
+
 export type AddressFormData = z.infer<typeof addressSchema>;
 export type AddressDraft = Omit<AddressFormData, "prefecture"> & {
   prefecture: string;

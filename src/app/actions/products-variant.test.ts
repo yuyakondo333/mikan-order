@@ -101,6 +101,45 @@ describe("createProductWithVariantsAction", () => {
     }
   });
 
+  it("商品名が空文字の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "", stockKg: 10 },
+      [{ label: "3kg", weightKg: "3", priceJpy: 1800 }]
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
+  it("バリエーションのpriceJpyが負の値の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "みかん", stockKg: 10 },
+      [{ label: "3kg", weightKg: "3", priceJpy: -100 }]
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
+  it("バリエーションのweightKgが不正な文字列の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createProductWithVariantsAction(
+      { name: "みかん", stockKg: 10 },
+      [{ label: "3kg", weightKg: "abc", priceJpy: 1800 }]
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+  });
+
   it("variants空配列でisAvailable=trueを指定しても強制的にfalseで作成される", async () => {
     setupAdmin();
     mockCreateProduct.mockResolvedValue({
@@ -123,6 +162,26 @@ describe("createProductWithVariantsAction", () => {
 describe("updateProductV2Action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("stockKgが負の値の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateProductV2Action("p1", { stockKg: -10 });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+
+  it("nameが空文字の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateProductV2Action("p1", { name: "" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockUpdateProduct).not.toHaveBeenCalled();
   });
 
   // G3: 部分更新
@@ -184,6 +243,34 @@ describe("createVariantAction", () => {
     vi.clearAllMocks();
   });
 
+  it("ラベルが空文字の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction("p1", {
+      label: "",
+      weightKg: "5",
+      priceJpy: 2800,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockCreateVariant).not.toHaveBeenCalled();
+  });
+
+  it("priceJpyが0の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await createVariantAction("p1", {
+      label: "5kg",
+      weightKg: "5",
+      priceJpy: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockCreateVariant).not.toHaveBeenCalled();
+  });
+
   // G5: 正常作成
   it("バリエーションを正常に作成する", async () => {
     setupAdmin();
@@ -205,6 +292,26 @@ describe("createVariantAction", () => {
 describe("updateVariantAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("priceJpyが負の値の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateVariantAction("v1", { priceJpy: -500 });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockUpdateVariant).not.toHaveBeenCalled();
+  });
+
+  it("labelが空文字の場合バリデーションエラーを返す", async () => {
+    setupAdmin();
+
+    const result = await updateVariantAction("v1", { label: "" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(mockUpdateVariant).not.toHaveBeenCalled();
   });
 
   // G6: 部分更新
