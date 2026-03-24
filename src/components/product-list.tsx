@@ -4,16 +4,19 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { ProductCard } from "@/components/product-card";
 import { addToCartByVariant } from "@/app/actions/cart";
+import { useCartCount } from "@/components/cart-count-provider";
 import type { ProductWithVariants } from "@/types";
 
 export function ProductList({ products }: { products: ProductWithVariants[] }) {
   const [, startTransition] = useTransition();
+  const { incrementCount } = useCartCount();
 
   function handleAddToCart(variantId: string, quantity: number, productName: string) {
     startTransition(async () => {
       const result = await addToCartByVariant(variantId, quantity);
 
       if (result.success) {
+        incrementCount(quantity);
         toast.success(`${productName} を ${quantity}個 カートに追加しました`);
       } else {
         toast.error(result.error || "カートへの追加に失敗しました");
