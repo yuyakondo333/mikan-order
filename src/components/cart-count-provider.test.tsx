@@ -22,11 +22,31 @@ function CountDisplay() {
   return <span data-testid="count">{count}</span>;
 }
 
-let capturedContext: ReturnType<typeof useCartCount>;
-
 function CountController() {
-  capturedContext = useCartCount();
-  return <span data-testid="count">{capturedContext.count}</span>;
+  const { count, setCount, incrementCount } = useCartCount();
+  return (
+    <div>
+      <span data-testid="count">{count}</span>
+      <button data-testid="set" onClick={() => setCount(Number(container.querySelector<HTMLInputElement>('[data-testid="set-value"]')?.value ?? "0"))}>set</button>
+      <button data-testid="inc" onClick={() => incrementCount(Number(container.querySelector<HTMLInputElement>('[data-testid="inc-value"]')?.value ?? "0"))}>inc</button>
+      <input data-testid="set-value" defaultValue="0" />
+      <input data-testid="inc-value" defaultValue="0" />
+    </div>
+  );
+}
+
+function getCount() {
+  return container.querySelector('[data-testid="count"]')?.textContent;
+}
+
+function setInputAndClick(inputTestId: string, value: string, buttonTestId: string) {
+  const input = container.querySelector<HTMLInputElement>(`[data-testid="${inputTestId}"]`);
+  if (input) {
+    // React の制御外なので nativeInputValueSetter を使う
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  container.querySelector<HTMLButtonElement>(`[data-testid="${buttonTestId}"]`)?.click();
 }
 
 describe("CartCountProvider", () => {
@@ -39,9 +59,7 @@ describe("CartCountProvider", () => {
           </CartCountProvider>
         );
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
 
     it("initialCount=5 で初期化される", async () => {
@@ -52,9 +70,7 @@ describe("CartCountProvider", () => {
           </CartCountProvider>
         );
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("5");
+      expect(getCount()).toBe("5");
     });
 
     it("initialCount に負の値を渡した場合 0 として扱う", async () => {
@@ -65,9 +81,7 @@ describe("CartCountProvider", () => {
           </CartCountProvider>
         );
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
   });
 
@@ -81,11 +95,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.setCount(3);
+        setInputAndClick("set-value", "3", "set");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("3");
+      expect(getCount()).toBe("3");
     });
 
     it("setCount(0) で 0 に戻せる", async () => {
@@ -97,11 +109,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.setCount(0);
+        setInputAndClick("set-value", "0", "set");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
 
     it("setCount に負の値を渡した場合 0 にクランプされる", async () => {
@@ -113,11 +123,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.setCount(-10);
+        setInputAndClick("set-value", "-10", "set");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
   });
 
@@ -131,11 +139,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(1);
+        setInputAndClick("inc-value", "1", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("1");
+      expect(getCount()).toBe("1");
     });
 
     it("incrementCount(-1) でカウントが1減る", async () => {
@@ -147,11 +153,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(-1);
+        setInputAndClick("inc-value", "-1", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("4");
+      expect(getCount()).toBe("4");
     });
 
     it("incrementCount(-totalCount) でカウントが0になる", async () => {
@@ -163,11 +167,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(-3);
+        setInputAndClick("inc-value", "-3", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
 
     it("incrementCount の結果が負にならない（0で下限クランプ）", async () => {
@@ -179,11 +181,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(-5);
+        setInputAndClick("inc-value", "-5", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("0");
+      expect(getCount()).toBe("0");
     });
 
     it("incrementCount(0) で値が変化しない", async () => {
@@ -195,11 +195,9 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(0);
+        setInputAndClick("inc-value", "0", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("3");
+      expect(getCount()).toBe("3");
     });
 
     it("incrementCount を連続で呼んでも正しく累積する", async () => {
@@ -211,13 +209,15 @@ describe("CartCountProvider", () => {
         );
       });
       await act(async () => {
-        capturedContext.incrementCount(1);
-        capturedContext.incrementCount(1);
-        capturedContext.incrementCount(1);
+        setInputAndClick("inc-value", "1", "inc");
       });
-      expect(
-        container.querySelector('[data-testid="count"]')?.textContent
-      ).toBe("3");
+      await act(async () => {
+        setInputAndClick("inc-value", "1", "inc");
+      });
+      await act(async () => {
+        setInputAndClick("inc-value", "1", "inc");
+      });
+      expect(getCount()).toBe("3");
     });
   });
 
