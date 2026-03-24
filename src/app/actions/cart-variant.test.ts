@@ -246,7 +246,6 @@ describe("addToCartByVariant", () => {
     });
   });
 
-  // 小数値（正の小数）でエラーを返す
   it("小数値でエラーを返す", async () => {
     setupAuth();
 
@@ -258,7 +257,6 @@ describe("addToCartByVariant", () => {
     });
   });
 
-  // 負の整数でエラーを返す
   it("負の整数でエラーを返す", async () => {
     setupAuth();
 
@@ -270,7 +268,6 @@ describe("addToCartByVariant", () => {
     });
   });
 
-  // NaNでエラーを返す
   it("NaNでエラーを返す", async () => {
     setupAuth();
 
@@ -356,7 +353,6 @@ describe("updateCartItemByVariant", () => {
     expect(result).toEqual({ success: false, error: "在庫が不足しています" });
   });
 
-  // 小数値でエラーを返す
   it("小数値でエラーを返す", async () => {
     setupAuth();
 
@@ -368,7 +364,6 @@ describe("updateCartItemByVariant", () => {
     });
   });
 
-  // quantity=0でエラーを返す
   it("quantity=0でエラーを返す", async () => {
     setupAuth();
 
@@ -380,7 +375,6 @@ describe("updateCartItemByVariant", () => {
     });
   });
 
-  // 負の整数でエラーを返す
   it("負の整数でエラーを返す", async () => {
     setupAuth();
 
