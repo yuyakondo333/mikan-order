@@ -67,7 +67,12 @@ export async function createProduct(data: {
 
 export async function updateProduct(
   id: string,
-  data: Partial<Record<string, unknown>>
+  data: Partial<{
+    name: string;
+    stockKg: number;
+    description: string | null;
+    isAvailable: boolean;
+  }>
 ) {
   await db.update(products).set(data).where(eq(products.id, id));
 }
