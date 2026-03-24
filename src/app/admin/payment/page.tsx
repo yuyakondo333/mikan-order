@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
 import { PaymentSettingsEditor } from "@/components/admin/payment-settings-editor";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,9 @@ async function PaymentData() {
   return <PaymentSettingsEditor initialData={settings} />;
 }
 
-export default function AdminPaymentPage() {
+export default async function AdminPaymentPage() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) redirect("/admin/login");
   return (
     <Suspense
       fallback={
