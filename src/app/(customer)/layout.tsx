@@ -13,8 +13,8 @@ export default async function CustomerLayout({
   const cartItemCount = user ? await getCartItemCount(user.id) : 0;
 
   return (
-    <CustomerProviders>
-      <CustomerHeader itemCount={cartItemCount} />
+    <CustomerProviders cartItemCount={cartItemCount}>
+      <CustomerHeader />
       {children}
       <CustomerFooter />
     </CustomerProviders>
