@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { verifyLineIdToken } from "./line-verify";
+import { verifyLineIdToken, LINE_ISSUER } from "./line-verify";
 
 // JWT形式のダミートークン（header.payload.signature）
 const VALID_JWT_TOKEN = "header.payload.signature";
@@ -17,7 +17,7 @@ describe("verifyLineIdToken", () => {
       name: "テストユーザー",
       picture: "https://example.com/pic.jpg",
       aud: "1234567890",
-      iss: "https://access.line.me",
+      iss: LINE_ISSUER,
     };
     vi.stubGlobal(
       "fetch",
@@ -85,7 +85,7 @@ describe("verifyLineIdToken", () => {
             sub: "U999",
             name: "No Pic User",
             aud: "1234567890",
-            iss: "https://access.line.me",
+            iss: LINE_ISSUER,
           }),
       })
     );
@@ -109,7 +109,7 @@ describe("verifyLineIdToken", () => {
               sub: "U123",
               name: "Test",
               aud: "9999999999",
-              iss: "https://access.line.me",
+              iss: LINE_ISSUER,
             }),
         })
       );
@@ -165,7 +165,7 @@ describe("verifyLineIdToken", () => {
             Promise.resolve({
               sub: "U123",
               name: "Test",
-              iss: "https://access.line.me",
+              iss: LINE_ISSUER,
             }),
         })
       );
@@ -180,7 +180,7 @@ describe("verifyLineIdToken", () => {
       sub: "U123",
       name: "Test",
       aud: "1234567890",
-      iss: "https://access.line.me",
+      iss: LINE_ISSUER,
       picture,
     });
 
@@ -242,7 +242,7 @@ describe("verifyLineIdToken", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ iss: "https://access.line.me" }),
+        json: () => Promise.resolve({ iss: LINE_ISSUER }),
       })
     );
 

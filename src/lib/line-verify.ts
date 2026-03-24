@@ -1,3 +1,5 @@
+export const LINE_ISSUER = "https://access.line.me";
+
 type LineVerifyResult = {
   sub: string;
   name: string;
@@ -38,7 +40,7 @@ export async function verifyLineIdToken(
   if (data.aud !== channelId) return null;
 
   // レスポンス検証: iss（発行元）がLINEであること
-  if (data.iss !== "https://access.line.me") return null;
+  if (data.iss !== LINE_ISSUER) return null;
 
   // LINE APIレスポンスの必須フィールドを検証
   if (typeof data.sub !== "string" || typeof data.name !== "string") {
