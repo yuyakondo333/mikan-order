@@ -18,7 +18,13 @@ export default async function Home({
   const liffState = params["liff.state"];
 
   if (typeof liffState === "string" && liffState.startsWith("/")) {
-    const path = decodeURIComponent(liffState);
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(liffState);
+    } catch {
+      redirect("/products");
+    }
+    const path = new URL(decoded, "http://localhost").pathname;
     if (
       ALLOWED_PATHS.some(
         (allowed) => path === allowed || path.startsWith(allowed + "/")
