@@ -8,24 +8,36 @@ import {
   updateCartItemByVariant,
   removeCartItemByVariant,
 } from "@/app/actions/cart";
+import { useCartCount } from "@/components/cart-count-provider";
 import type { CartItemWithVariant } from "@/types";
 
 export function CartContent({ items }: { items: CartItemWithVariant[] }) {
   const [isPending, startTransition] = useTransition();
+  const { incrementCount } = useCartCount();
 
   function handleUpdateQuantity(variantId: string, quantity: number) {
+    const currentItem = items.find((item) => item.variantId === variantId);
+    const oldQuantity = currentItem?.quantity ?? 0;
+
     startTransition(async () => {
       const result = await updateCartItemByVariant(variantId, quantity);
-      if (!result.success) {
+      if (result.success) {
+        incrementCount(quantity - oldQuantity);
+      } else {
         toast.error(result.error || "カートの更新に失敗しました");
       }
     });
   }
 
   function handleRemove(variantId: string) {
+    const currentItem = items.find((item) => item.variantId === variantId);
+    const removedQuantity = currentItem?.quantity ?? 0;
+
     startTransition(async () => {
       const result = await removeCartItemByVariant(variantId);
-      if (!result.success) {
+      if (result.success) {
+        incrementCount(-removedQuantity);
+      } else {
         toast.error(result.error || "商品の削除に失敗しました");
       }
     });
