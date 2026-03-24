@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useState } from "react";
 
 type CartCountContextValue = {
@@ -15,7 +16,7 @@ export function CartCountProvider({
   children,
 }: {
   initialCount: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const [count, setCountRaw] = useState(Math.max(0, initialCount));
 
