@@ -121,7 +121,7 @@ export async function updateProductV2Action(
         return { success: false, error: "バリエーションがない商品は公開できません" };
       }
     }
-    await updateProduct(id, data as never);
+    await updateProduct(id, data);
     revalidatePath("/admin/products");
     revalidatePath("/products");
     return { success: true };
