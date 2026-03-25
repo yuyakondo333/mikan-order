@@ -5,7 +5,9 @@ const isConfigured =
   !!process.env.UPSTASH_REDIS_REST_URL &&
   !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
-function createLimiter(tokens: number, window: string) {
+type Duration = `${number} ${"ms" | "s" | "m" | "h" | "d"}` | `${number}${"ms" | "s" | "m" | "h" | "d"}`;
+
+function createLimiter(tokens: number, window: Duration) {
   if (!isConfigured) return null;
   return new Ratelimit({
     redis: new Redis({
