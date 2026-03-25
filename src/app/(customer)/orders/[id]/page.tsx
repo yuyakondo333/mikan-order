@@ -3,7 +3,7 @@ import { getOrderDetailV2 } from "@/db/queries/orders";
 import { getPaymentSettings } from "@/db/queries/payment-settings";
 import { getAuthenticatedUser } from "@/lib/dal";
 import { OrderDetailView } from "@/components/order-detail-view";
-import { notFound } from "next/navigation";
+import { notFound, unauthorized } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const user = await getAuthenticatedUser();
-  if (!user) notFound();
+  if (!user) unauthorized();
 
   const { id } = await params;
   const order = await getOrderDetailV2(id, user.id);

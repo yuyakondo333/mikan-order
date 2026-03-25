@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { forbidden } from "next/navigation";
 import { getLegalInfo } from "@/db/queries/legal-info";
 import { LegalInfoEditor } from "@/components/admin/legal-info-editor";
 import { LegalFormSkeleton } from "@/components/admin/skeletons";
@@ -19,7 +19,7 @@ async function LegalData() {
 
 export default async function AdminLegalPage() {
   const isAdmin = await verifyAdmin();
-  if (!isAdmin) redirect("/admin/login");
+  if (!isAdmin) forbidden();
   return (
     <Suspense fallback={<LegalFormSkeleton />}>
       <LegalData />
