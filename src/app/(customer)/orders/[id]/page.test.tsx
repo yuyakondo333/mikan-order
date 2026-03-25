@@ -8,13 +8,23 @@ class NotFoundError extends Error {
   }
 }
 
-const { mockNotFound } = vi.hoisted(() => ({
+class UnauthorizedError extends Error {
+  constructor() {
+    super("NEXT_UNAUTHORIZED");
+  }
+}
+
+const { mockNotFound, mockUnauthorized } = vi.hoisted(() => ({
   mockNotFound: vi.fn(() => {
     throw new NotFoundError();
+  }),
+  mockUnauthorized: vi.fn(() => {
+    throw new UnauthorizedError();
   }),
 }));
 vi.mock("next/navigation", () => ({
   notFound: mockNotFound,
+  unauthorized: mockUnauthorized,
 }));
 
 vi.mock("@/lib/dal", () => ({
@@ -78,14 +88,14 @@ describe("OrderDetailPage", () => {
     vi.clearAllMocks();
   });
 
-  it("未認証の場合notFoundを呼びgetOrderDetailV2を呼ばない", async () => {
+  it("未認証の場合unauthorizedを呼びgetOrderDetailV2を呼ばない", async () => {
     mockGetAuth.mockResolvedValue(null);
 
     await expect(
       OrderDetailPage({ params: Promise.resolve({ id: "order-1" }) })
-    ).rejects.toThrow(NotFoundError);
+    ).rejects.toThrow(UnauthorizedError);
 
-    expect(mockNotFound).toHaveBeenCalled();
+    expect(mockUnauthorized).toHaveBeenCalled();
     expect(mockGetOrderDetail).not.toHaveBeenCalled();
   });
 

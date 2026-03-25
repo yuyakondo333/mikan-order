@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { forbidden } from "next/navigation";
 import { getAllProductsWithVariants } from "@/db/queries/products";
 import { AdminProductsManager } from "@/components/admin/products-manager";
 import { ProductsListSkeleton } from "@/components/admin/skeletons";
@@ -19,7 +19,7 @@ async function ProductsData() {
 
 export default async function AdminProductsPage() {
   const isAdmin = await verifyAdmin();
-  if (!isAdmin) redirect("/admin/login");
+  if (!isAdmin) forbidden();
   return (
     <Suspense fallback={<ProductsManagerSkeleton />}>
       <ProductsData />
