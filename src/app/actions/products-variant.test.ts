@@ -20,10 +20,15 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-const { mockAuth } = vi.hoisted(() => ({
+const { mockAuth, mockCheckRateLimit } = vi.hoisted(() => ({
   mockAuth: vi.fn<() => Promise<Session | null>>(),
+  mockCheckRateLimit: vi.fn(),
 }));
 vi.mock("@/auth", () => ({ auth: mockAuth }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: mockCheckRateLimit,
+  adminLimiter: "admin-limiter",
+}));
 
 import { createProduct, updateProduct, deleteProduct } from "@/db/queries/products";
 import {
@@ -540,5 +545,32 @@ describe("toggleProductAvailabilityAction", () => {
 
     expect(result).toEqual({ success: false, error: "入力内容に誤りがあります" });
     expect(mockUpdateProduct).not.toHaveBeenCalled();
+  });
+});
+
+// =========================================
+// レート制限
+// =========================================
+describe("管理操作レート制限", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue(null);
+  });
+
+  it("deleteProductAction: レート制限超過でエラーを返す", async () => {
+    setupAdmin();
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await deleteProductAction(PRODUCT_ID);
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("admin-limiter", "admin@example.com");
+    expect(mockDeleteProduct).not.toHaveBeenCalled();
   });
 });

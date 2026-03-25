@@ -28,6 +28,14 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn(),
+}));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: mockCheckRateLimit,
+  cartLimiter: "cart-limiter",
+}));
+
 import { getAuthenticatedUser } from "@/lib/dal";
 import {
   getCartItemByVariant,
@@ -415,5 +423,65 @@ describe("removeCartItemByVariant", () => {
 
     expect(result).toEqual({ success: true });
     expect(mockDeleteCartItemByVariant).toHaveBeenCalledWith("user-1", "v1");
+  });
+});
+
+// =========================================
+// レート制限
+// =========================================
+describe("カート操作レート制限", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue(null);
+  });
+
+  it("addToCartByVariant: レート制限超過でエラーを返す", async () => {
+    setupAuth();
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await addToCartByVariant("v1", 1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("cart-limiter", "user-1");
+    expect(mockUpsertCartItemByVariant).not.toHaveBeenCalled();
+  });
+
+  it("updateCartItemByVariant: レート制限超過でエラーを返す", async () => {
+    setupAuth();
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await updateCartItemByVariant("v1", 1);
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("cart-limiter", "user-1");
+  });
+
+  it("removeCartItemByVariant: レート制限超過でエラーを返す", async () => {
+    setupAuth();
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await removeCartItemByVariant("v1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("cart-limiter", "user-1");
+    expect(mockDeleteCartItemByVariant).not.toHaveBeenCalled();
   });
 });
