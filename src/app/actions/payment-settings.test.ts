@@ -20,6 +20,14 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn(),
+}));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: mockCheckRateLimit,
+  adminLimiter: "admin-limiter",
+}));
+
 import { upsertPaymentSettingsAction } from "@/app/actions/payment-settings";
 import { revalidatePath } from "next/cache";
 
@@ -131,5 +139,22 @@ describe("upsertPaymentSettingsAction", () => {
     await upsertPaymentSettingsAction(validData);
 
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("レート制限超過でエラーを返す", async () => {
+    setupAdmin();
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await upsertPaymentSettingsAction(validData);
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("admin-limiter", "admin@example.com");
+    expect(mockUpsertPaymentSettings).not.toHaveBeenCalled();
   });
 });

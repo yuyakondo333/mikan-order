@@ -6,6 +6,8 @@ import {
   type UpsertPaymentSettingsData,
 } from "@/db/queries/payment-settings";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { auth } from "@/auth";
+import { checkRateLimit, adminLimiter } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const paymentSettingsSchema = z.object({
@@ -21,6 +23,11 @@ export async function upsertPaymentSettingsAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const session = await auth();
+  const adminId = session?.user?.email ?? "admin";
+  const rateLimitResult = await checkRateLimit(adminLimiter, adminId);
+  if (rateLimitResult) return rateLimitResult;
 
   const parsed = paymentSettingsSchema.safeParse(data);
   if (!parsed.success) {

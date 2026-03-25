@@ -46,6 +46,15 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+const { mockCheckRateLimit } = vi.hoisted(() => ({
+  mockCheckRateLimit: vi.fn(),
+}));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: mockCheckRateLimit,
+  orderLimiter: "order-limiter",
+  adminLimiter: "admin-limiter",
+}));
+
 const { mockAuth } = vi.hoisted(() => ({
   mockAuth: vi.fn<() => Promise<Session | null>>(),
 }));
@@ -954,5 +963,53 @@ describe("updateOrderStatusByVariantAction", () => {
     expect(mockUpdateOrderStatus).toHaveBeenCalledWith("non-existent-id", "shipped");
     expect(mockSendShipping).not.toHaveBeenCalled();
     expect(vi.mocked(revalidatePath)).not.toHaveBeenCalled();
+  });
+});
+
+// =========================================
+// レート制限
+// =========================================
+describe("レート制限", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue(null);
+  });
+
+  it("createOrderByVariant: レート制限超過でエラーを返し、DB操作が実行されない", async () => {
+    mockGetAuth.mockResolvedValue(mockUser);
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await createOrderByVariant(pickupFulfillment, validIdempotencyKey);
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("order-limiter", "user-1");
+    expect(mockGetCartWithVariants).not.toHaveBeenCalled();
+    expect(mockDbTransaction).not.toHaveBeenCalled();
+  });
+
+  it("updateOrderStatusByVariantAction: レート制限超過でエラーを返す", async () => {
+    mockAuth.mockResolvedValue({
+      user: { role: "admin", email: "admin@example.com" },
+      expires: "",
+    } as Session);
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+
+    const result = await updateOrderStatusByVariantAction("order-1", "shipped");
+
+    expect(result).toEqual({
+      success: false,
+      error: "リクエストが多すぎます。しばらくしてから再度お試しください",
+    });
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("admin-limiter", "admin@example.com");
+    expect(mockUpdateOrderStatus).not.toHaveBeenCalled();
   });
 });

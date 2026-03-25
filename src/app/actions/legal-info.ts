@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { upsertLegalInfo } from "@/db/queries/legal-info";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { auth } from "@/auth";
+import { checkRateLimit, adminLimiter } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const legalInfoSchema = z.object({
@@ -38,6 +40,11 @@ export async function upsertLegalInfoAction(data: {
 }) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const session = await auth();
+  const adminId = session?.user?.email ?? "admin";
+  const rateLimitResult = await checkRateLimit(adminLimiter, adminId);
+  if (rateLimitResult) return rateLimitResult;
 
   const parsed = legalInfoSchema.safeParse(data);
   if (!parsed.success) {

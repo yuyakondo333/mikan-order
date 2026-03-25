@@ -22,6 +22,8 @@
     "@conform-to/zod": "^1.17.1",
     "@line/bot-sdk": "^10.6.0",
     "@line/liff": "^2.27.3",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",

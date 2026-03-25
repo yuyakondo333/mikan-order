@@ -21,9 +21,11 @@ import { getPaymentSettings } from "@/db/queries/payment-settings";
 import { fulfillmentSchema, idempotencyKeySchema, orderStatusSchema } from "@/lib/validations";
 import { formatPickupDate, TIME_SLOT_LABELS } from "@/lib/constants";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { auth } from "@/auth";
 import { db } from "@/db";
 import { orders, orderItems, addresses, cartItems, products } from "@/db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
+import { checkRateLimit, orderLimiter, adminLimiter } from "@/lib/rate-limit";
 
 type OrderActionResult =
   | { success: true; fulfillmentMethod: string }
@@ -35,6 +37,9 @@ export async function createOrderByVariant(
 ): Promise<OrderActionResult> {
   const user = await getAuthenticatedUser();
   if (!user) return { success: false, error: "認証が必要です" };
+
+  const rateLimitResult = await checkRateLimit(orderLimiter, user.id);
+  if (rateLimitResult) return rateLimitResult;
 
   const parsedKey = idempotencyKeySchema.safeParse(idempotencyKey);
   if (!parsedKey.success) {
@@ -226,6 +231,11 @@ export async function updateOrderStatusByVariantAction(
   if (!isAdmin) {
     return { success: false, error: "管理者認証が必要です" };
   }
+
+  const session = await auth();
+  const adminId = session?.user?.email ?? "admin";
+  const rateLimitResult = await checkRateLimit(adminLimiter, adminId);
+  if (rateLimitResult) return rateLimitResult;
 
   const parsed = orderStatusSchema.safeParse(status);
   if (!parsed.success) {

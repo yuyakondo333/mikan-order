@@ -12,6 +12,7 @@ import { calcStockConsumptionKg } from "@/db/queries/products";
 import { db } from "@/db";
 import { products, productVariants } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { checkRateLimit, cartLimiter } from "@/lib/rate-limit";
 
 type CartActionResult = { success: true } | { success: false; error: string };
 
@@ -26,6 +27,9 @@ export async function clearCart(): Promise<CartActionResult> {
   const user = await getAuthenticatedUser();
   if (!user) return { success: false, error: "認証が必要です" };
 
+  const rateLimitResult = await checkRateLimit(cartLimiter, user.id);
+  if (rateLimitResult) return rateLimitResult;
+
   await deleteAllCartItems(user.id);
 
   revalidateCartPages();
@@ -38,6 +42,9 @@ export async function addToCartByVariant(
 ): Promise<CartActionResult> {
   const user = await getAuthenticatedUser();
   if (!user) return { success: false, error: "認証が必要です" };
+
+  const rateLimitResult = await checkRateLimit(cartLimiter, user.id);
+  if (rateLimitResult) return rateLimitResult;
 
   if (!Number.isInteger(quantity) || quantity < 1) {
     return { success: false, error: "数量は1以上の整数で指定してください" };
@@ -84,6 +91,9 @@ export async function updateCartItemByVariant(
   try {
     const user = await getAuthenticatedUser();
     if (!user) return { success: false, error: "認証が必要です" };
+
+    const rateLimitResult = await checkRateLimit(cartLimiter, user.id);
+    if (rateLimitResult) return rateLimitResult;
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       return { success: false, error: "数量は1以上の整数で指定してください" };
@@ -135,6 +145,9 @@ export async function removeCartItemByVariant(
   try {
     const user = await getAuthenticatedUser();
     if (!user) return { success: false, error: "認証が必要です" };
+
+    const rateLimitResult = await checkRateLimit(cartLimiter, user.id);
+    if (rateLimitResult) return rateLimitResult;
 
     await deleteCartItemByVariant(user.id, variantId);
 
