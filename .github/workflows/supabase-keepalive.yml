@@ -1,0 +1,16 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *" # 3日おきにUTC 0:00に実行
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  keepalive:
+    name: Ping Supabase databases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping dev database
+        run: psql "${{ secrets.SUPABASE_DEV_DATABASE_URL }}" -c "SELECT 1"
+      - name: Ping prod database
+        run: psql "${{ secrets.SUPABASE_PROD_DATABASE_URL }}" -c "SELECT 1"
