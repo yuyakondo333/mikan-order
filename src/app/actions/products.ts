@@ -14,6 +14,8 @@ import {
   countVariantsByProductId,
 } from "@/db/queries/variants";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { auth } from "@/auth";
+import { checkRateLimit, adminLimiter } from "@/lib/rate-limit";
 import {
   uuidSchema,
   newProductSchema,
@@ -22,9 +24,18 @@ import {
   updateVariantSchema,
 } from "@/lib/validations";
 
+async function checkAdminRateLimit() {
+  const session = await auth();
+  const adminId = session?.user?.email ?? "admin";
+  return checkRateLimit(adminLimiter, adminId);
+}
+
 export async function deleteProductAction(id: unknown) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
 
   const parsed = uuidSchema.safeParse(id);
   if (!parsed.success) {
@@ -48,6 +59,9 @@ export async function toggleProductAvailabilityAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
 
   const parsedId = uuidSchema.safeParse(id);
   const parsedAvailable = z.boolean().safeParse(isAvailable);
@@ -78,6 +92,9 @@ export async function createProductWithVariantsAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
 
   const parsedProduct = newProductSchema.safeParse(productData);
   const parsedVariants = z.array(variantSchema).safeParse(variants);
@@ -122,6 +139,9 @@ export async function updateProductV2Action(
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
+
   const parsedId = uuidSchema.safeParse(id);
   const parsedData = updateProductSchema.safeParse(data);
   if (!parsedId.success || !parsedData.success) {
@@ -152,6 +172,9 @@ export async function createVariantAction(
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
+
   const parsedId = uuidSchema.safeParse(productId);
   const parsedData = variantSchema.safeParse(data);
   if (!parsedId.success || !parsedData.success) {
@@ -176,6 +199,9 @@ export async function updateVariantAction(
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
 
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
+
   const parsedId = uuidSchema.safeParse(variantId);
   const parsedData = updateVariantSchema.safeParse(data);
   if (!parsedId.success || !parsedData.success) {
@@ -199,6 +225,9 @@ export async function deleteVariantAction(
 ) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) return { success: false, error: "管理者認証が必要です" };
+
+  const rateLimitResult = await checkAdminRateLimit();
+  if (rateLimitResult) return rateLimitResult;
 
   const parsedVariantId = uuidSchema.safeParse(variantId);
   const parsedProductId = uuidSchema.safeParse(productId);
